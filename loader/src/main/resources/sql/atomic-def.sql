@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS atomic.events (
       network_userid              VARCHAR(128),
       -- Location
       geo_country                 CHAR(2),
-      geo_region                  CHAR(2),
+      geo_region                  CHAR(3),
       geo_city                    VARCHAR(75),
       geo_zipcode                 VARCHAR(15),
       geo_latitude                DOUBLE PRECISION,
