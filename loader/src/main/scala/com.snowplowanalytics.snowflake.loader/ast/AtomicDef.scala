@@ -50,7 +50,7 @@ object AtomicDef {
 
     // Location
     Column("geo_country", Char(Some(2))),
-    Column("geo_region", Char(Some(2))),
+    Column("geo_region", Char(Some(3))),
     Column("geo_city", Varchar(Some(75))),
     Column("geo_zipcode", Varchar(Some(15))),
     Column("geo_latitude", DoublePrecision),
