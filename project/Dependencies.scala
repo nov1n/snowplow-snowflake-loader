@@ -26,6 +26,7 @@ object Dependencies {
     val json4sJackson    = "3.2.11"
     val cats             = "0.9.0"
     val igluClient       = "0.5.0"
+    val eventsManifest   = "0.1.0-rc1"
     // Scala (test only)
     val specs2           = "2.3.13"
     val scalazSpecs2     = "0.2"
@@ -47,6 +48,7 @@ object Dependencies {
   val json4sJackson    = "org.json4s"            %% "json4s-jackson"               % V.json4sJackson
   val cats             = "org.typelevel"         %% "cats-core"                    % V.cats
   val igluClient       = "com.snowplowanalytics" %% "iglu-scala-client"            % V.igluClient
+  val eventsManifest   = "com.snowplowanalytics" %% "snowplow-events-manifest"     % V.eventsManifest
 
   // Scala (test only)
   val specs2           = "org.specs2"            %% "specs2"                       % V.specs2         % "test"

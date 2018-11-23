@@ -14,16 +14,20 @@ package com.snowplowanalytics.snowflake.transformer
 
 import org.apache.spark.SparkContext
 
+import org.json4s.DefaultFormats
+import org.json4s.jackson.JsonMethods.parse
+
 import com.snowplowanalytics.snowflake.core.ProcessManifest
+import com.snowplowanalytics.snowplow.eventsmanifest.EventsManifest
 
 object TransformerJob {
 
   /** Process all directories, saving state into DynamoDB */
-  def run(sc: SparkContext, manifest: ProcessManifest, tableName: String, jobConfigs: List[TransformerJobConfig]): Unit = {
+  def run(sc: SparkContext, manifest: ProcessManifest, tableName: String, jobConfigs: List[TransformerJobConfig], eventsManifest: Option[EventsManifest]): Unit = {
     jobConfigs.foreach { jobConfig =>
       println(s"Snowflake Transformer: processing ${jobConfig.runId}. ${System.currentTimeMillis()}")
       manifest.add(tableName, jobConfig.runId)
-      val shredTypes = process(sc, jobConfig)
+      val shredTypes = process(sc, jobConfig, eventsManifest)
       manifest.markProcessed(tableName, jobConfig.runId, shredTypes, jobConfig.output)
       println(s"Snowflake Transformer: processed ${jobConfig.runId}. ${System.currentTimeMillis()}")
     }
@@ -35,19 +39,20 @@ object TransformerJob {
    *
    * @param sc existing spark context
    * @param jobConfig configuration with paths
+   * @param eventsManifest events manifest instance
    * @return list of discovered shredded types
    */
-  def process(sc: SparkContext, jobConfig: TransformerJobConfig) = {
+  def process(sc: SparkContext, jobConfig: TransformerJobConfig, eventsManifest: Option[EventsManifest]) = {
     val keysAggregator = new StringSetAccumulator
     sc.register(keysAggregator)
 
     val events = sc.textFile(jobConfig.input)
 
-    val snowflake = events.map { event =>
-      Transformer.transform(event) match {
-        case (keys, transformed) =>
+    val snowflake = events.flatMap { event =>
+      Transformer.transform(event, eventsManifest) match {
+        case Some((keys, transformed)) =>
           keysAggregator.add(keys)
-          transformed
+          Some(transformed)
       }
     }
 
