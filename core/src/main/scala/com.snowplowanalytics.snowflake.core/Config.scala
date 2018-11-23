@@ -27,6 +27,7 @@ import org.json4s.jackson.JsonMethods.parse
 import com.snowplowanalytics.iglu.client.Resolver
 import com.snowplowanalytics.iglu.client.validation.ValidatableJValue.validate
 import com.snowplowanalytics.snowflake.generated.ProjectMetadata
+import com.snowplowanalytics.snowplow.eventsmanifest.DynamoDbConfig
 
 /** Common loader configuration interface, extracted from configuration file */
 case class Config(
@@ -55,8 +56,8 @@ object Config {
   case class RawCliLoader(command: String, loaderConfig: String, resolver: String, dryRun: Boolean, base64: Boolean)
   case class CliLoaderConfiguration(command: Command, loaderConfig: Config, dryRun: Boolean)
 
-  case class RawCliTransformer(loaderConfig: String, resolver: String)
-  case class CliTransformerConfiguration(loaderConfig: Config)
+  case class RawCliTransformer(loaderConfig: String, resolver: String, eventsManifestConfig: Option[String])
+  case class CliTransformerConfiguration(loaderConfig: Config, eventsManifestConfig: Option[DynamoDbConfig])
 
   /** Available methods to authenticate Snowflake loading */
   sealed trait AuthMethod
@@ -144,7 +145,13 @@ object Config {
       json <- parseJsonFile(rawConfig.loaderConfig, true)
       validConfig <- validate(json, true)(resolver).toEither.leftMap { x => s"Validation error: ${x.list.mkString(", ")}" }
       config <- extract(validConfig)
-    } yield CliTransformerConfiguration(config)
+      eventsManifestConfig <- rawConfig.eventsManifestConfig match {
+        case Some(manifestConfig) => DynamoDbConfig.extractFromBase64(manifestConfig, resolver).toEither
+          .leftMap { x => s"Events manifest config error: ${x.list.mkString(", ")}" }
+          .map { x => Some(x) }
+        case None => Right(None)
+      }
+    } yield CliTransformerConfiguration(config, eventsManifestConfig)
   }
 
 
@@ -185,7 +192,7 @@ object Config {
     help("help").text("prints this usage text")
   }
 
-  private val rawCliTransformer = RawCliTransformer("", "")
+  private val rawCliTransformer = RawCliTransformer("", "", None)
   private val transformerCliParser = new scopt.OptionParser[RawCliTransformer](ProjectMetadata.name + "-" + ProjectMetadata.version + ".jar") {
     head(ProjectMetadata.name, ProjectMetadata.version)
 
@@ -200,6 +207,12 @@ object Config {
       .valueName("resolver.json")
       .action((x, c) => c.copy(resolver = x))
       .text("Base64-encoded Iglu Resolver configuration JSON")
+
+    opt[String]("events-manifest")
+      .optional()
+      .valueName("eventsManifest.json")
+      .action((x, c) => c.copy(eventsManifestConfig = Some(x)))
+      .text("Base64-encoded Events Manifest configuration JSON")
 
     help("help").text("prints this usage text")
   }

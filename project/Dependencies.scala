@@ -16,9 +16,9 @@ object Dependencies {
 
   object V {
     // Java
-    val hadoop           = "2.7.3"
+    val hadoop           = "2.8.5"
     val snowflakeJdbc    = "3.3.2"
-    val aws              = "1.11.208"
+    val aws              = "1.11.209"
     // Scala
     val spark            = "2.2.0"
     val scopt            = "3.7.0"
@@ -26,6 +26,7 @@ object Dependencies {
     val json4sJackson    = "3.2.11"
     val cats             = "0.9.0"
     val igluClient       = "0.5.0"
+    val eventsManifest   = "0.1.0"
     // Scala (test only)
     val specs2           = "2.3.13"
     val scalazSpecs2     = "0.2"
@@ -42,11 +43,13 @@ object Dependencies {
 
   // Scala
   val spark            = "org.apache.spark"      %% "spark-core"                   % V.spark          % "provided"
+  val sparkSql         = "org.apache.spark"      %% "spark-sql"                    % V.spark          % "provided"
   val scopt            = "com.github.scopt"      %% "scopt"                        % V.scopt
   val analyticsSdk     = "com.snowplowanalytics" %% "snowplow-scala-analytics-sdk" % V.analyticsSdk
   val json4sJackson    = "org.json4s"            %% "json4s-jackson"               % V.json4sJackson
   val cats             = "org.typelevel"         %% "cats-core"                    % V.cats
   val igluClient       = "com.snowplowanalytics" %% "iglu-scala-client"            % V.igluClient
+  val eventsManifest   = "com.snowplowanalytics" %% "snowplow-events-manifest"     % V.eventsManifest
 
   // Scala (test only)
   val specs2           = "org.specs2"            %% "specs2"                       % V.specs2         % "test"
