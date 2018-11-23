@@ -12,14 +12,15 @@
  */
 package com.snowplowanalytics.snowflake.transformer
 
-import org.apache.spark.{SparkConf, SparkContext}
-import com.snowplowanalytics.snowflake.core.{ ProcessManifest, Config }
+import com.snowplowanalytics.snowflake.core.{Config, ProcessManifest}
 
+import org.apache.spark.SparkConf
+import org.apache.spark.sql.SparkSession
 
 object Main {
   def main(args: Array[String]): Unit = {
     Config.parseTransformerCli(args) match {
-      case Some(Right(Config.CliTransformerConfiguration(appConfig))) =>
+      case Some(Right(Config.CliTransformerConfiguration(appConfig, eventsManifestConfig))) =>
 
         // Always use EMR Role role for manifest-access
         val s3 = ProcessManifest.getS3(appConfig.awsRegion)
@@ -30,7 +31,8 @@ object Main {
         val config = new SparkConf()
           .setAppName("snowflake-transformer")
           .setIfMissing("spark.master", "local[*]")
-        val sc = new SparkContext(config)
+
+        val spark = SparkSession.builder().config(config).getOrCreate()
 
         // Get run folders that are not in RunManifest in any form
         val runFolders = manifest.getUnprocessed(appConfig.manifest, appConfig.input)
@@ -38,7 +40,7 @@ object Main {
         runFolders match {
           case Right(folders) =>
             val configs = folders.map(TransformerJobConfig(appConfig.input, appConfig.stageUrl, _))
-            TransformerJob.run(sc, manifest, appConfig.manifest, configs)
+            TransformerJob.run(spark, manifest, appConfig.manifest, configs, eventsManifestConfig)
           case Left(error) =>
             println("Cannot get list of unprocessed folders")
             println(error)

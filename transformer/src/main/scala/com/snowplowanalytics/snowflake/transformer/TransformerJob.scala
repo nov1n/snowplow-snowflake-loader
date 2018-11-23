@@ -12,46 +12,55 @@
  */
 package com.snowplowanalytics.snowflake.transformer
 
-import org.apache.spark.SparkContext
+import org.apache.spark.sql.{SaveMode, SparkSession}
 
 import com.snowplowanalytics.snowflake.core.ProcessManifest
+import com.snowplowanalytics.snowplow.eventsmanifest.EventsManifest.EventsManifestConfig
 
 object TransformerJob {
 
   /** Process all directories, saving state into DynamoDB */
-  def run(sc: SparkContext, manifest: ProcessManifest, tableName: String, jobConfigs: List[TransformerJobConfig]): Unit = {
+  def run(spark: SparkSession, manifest: ProcessManifest, tableName: String, jobConfigs: List[TransformerJobConfig], eventsManifestConfig: Option[EventsManifestConfig]): Unit = {
     jobConfigs.foreach { jobConfig =>
       println(s"Snowflake Transformer: processing ${jobConfig.runId}. ${System.currentTimeMillis()}")
       manifest.add(tableName, jobConfig.runId)
-      val shredTypes = process(sc, jobConfig)
+      val shredTypes = process(spark, jobConfig, eventsManifestConfig)
       manifest.markProcessed(tableName, jobConfig.runId, shredTypes, jobConfig.output)
       println(s"Snowflake Transformer: processed ${jobConfig.runId}. ${System.currentTimeMillis()}")
     }
   }
 
   /**
-   * Transform particular folder to Snowflake-compatible format and
-   * return list of discovered shredded types
-   *
-   * @param sc existing spark context
-   * @param jobConfig configuration with paths
-   * @return list of discovered shredded types
-   */
-  def process(sc: SparkContext, jobConfig: TransformerJobConfig) = {
+    * Transform particular folder to Snowflake-compatible format and
+    * return list of discovered shredded types
+    *
+    * @param spark                Spark SQL session
+    * @param jobConfig            configuration with paths
+    * @param eventsManifestConfig events manifest config instance
+    * @return list of discovered shredded types
+    */
+  def process(spark: SparkSession, jobConfig: TransformerJobConfig, eventsManifestConfig: Option[EventsManifestConfig]) = {
+    import spark.implicits._
+
+    val sc = spark.sparkContext
     val keysAggregator = new StringSetAccumulator
     sc.register(keysAggregator)
 
     val events = sc.textFile(jobConfig.input)
 
-    val snowflake = events.map { event =>
-      Transformer.transform(event) match {
-        case (keys, transformed) =>
-          keysAggregator.add(keys)
-          transformed
+    val snowflake = events
+      .map { event => Transformer.jsonify(event) }
+      .flatMap { jsonifiedEvent =>
+        Transformer.transform(jsonifiedEvent._1, jsonifiedEvent._2, eventsManifestConfig) match {
+          case Some((keys, transformed)) =>
+            keysAggregator.add(keys)
+            Some(transformed)
+          case None => None
+        }
       }
-    }
 
-    snowflake.saveAsTextFile(jobConfig.output)
+    // DataFrame is used only for S3OutputFormat
+    snowflake.toDF.write.mode(SaveMode.Append).text(jobConfig.output)
 
     val keysFinal = keysAggregator.value.toList
     println(s"Shred types for  ${jobConfig.runId}: " + keysFinal.mkString(", "))
