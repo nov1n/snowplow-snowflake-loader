@@ -31,7 +31,8 @@ object BuildSettings {
     organization := "com.snowplowanalytics",
     scalaVersion := "2.11.12",
     resolvers ++= Seq(
-      "Sonatype OSS Snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
+      "Sonatype OSS Snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/",
+      "Snowplow Bintray" at "https://snowplow.bintray.com/snowplow-maven/"
     ),
 
     scalacOptions := Seq(

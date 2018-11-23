@@ -10,3 +10,4 @@ project/plugins/project/
 
 # Vagrant
 .vagrant
+dynamodb-local/
