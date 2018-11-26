@@ -70,7 +70,9 @@ object Statement {
   implicit object CreateWarehouseStatement extends Statement[CreateWarehouse] {
     def getStatement(ddl: CreateWarehouse): SqlStatement = {
       val size = ddl.size.getOrElse(CreateWarehouse.DefaultSize).toString.toUpperCase
-      SqlStatement(s"CREATE WAREHOUSE IF NOT EXISTS ${ddl.name} WAREHOUSE_SIZE = $size")
+      val autoSuspend = ddl.autoSuspend.getOrElse(CreateWarehouse.DefaultAutoSuspend).toString
+      val autoResume = ddl.autoResume.getOrElse(CreateWarehouse.DefaultAutoResume).toString.toUpperCase
+      SqlStatement(s"CREATE WAREHOUSE IF NOT EXISTS ${ddl.name} WAREHOUSE_SIZE = $size AUTO_SUSPEND = $autoSuspend AUTO_RESUME = $autoResume")
     }
   }
 

@@ -14,11 +14,13 @@ package com.snowplowanalytics.snowflake.loader.ast
 
 import com.snowplowanalytics.snowflake.loader.ast.CreateWarehouse._
 
-case class CreateWarehouse(name: String, size: Option[Size])
+case class CreateWarehouse(name: String, size: Option[Size], autoSuspend: Option[Int], autoResume: Option[Boolean])
 
 object CreateWarehouse {
 
   val DefaultSize: Size = XSmall
+  val DefaultAutoSuspend: Int = 300
+  val DefaultAutoResume: Boolean = true
 
   sealed trait Size
   case object XSmall extends Size
