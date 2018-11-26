@@ -14,9 +14,9 @@ package com.snowplowanalytics.snowflake.loader
 
 import cats.Show
 import cats.implicits._
-
 import ast.CreateTable._
 import ast.SnowflakeDatatype._
+import ast.Select.Substring
 
 package object ast {
   implicit object DatatypeShow extends Show[SnowflakeDatatype] {
@@ -50,8 +50,13 @@ package object ast {
   }
 
   implicit object CastedColumnShow extends Show[Select.CastedColumn] {
-    def show(column: Select.CastedColumn): String =
-      s"${column.originColumn}:${column.columnName}::${column.datatype.show}"
+    def show(column: Select.CastedColumn): String = {
+      val castedColumn = s"${column.originColumn}:${column.columnName}::${column.datatype.show}"
+      column.substring match {
+        case Some(Substring(start, length)) => s"substr($castedColumn,$start,$length)"
+        case None => castedColumn
+      }
+    }
   }
 
   implicit class StatementSyntax[S](val ast: S) extends AnyVal {
