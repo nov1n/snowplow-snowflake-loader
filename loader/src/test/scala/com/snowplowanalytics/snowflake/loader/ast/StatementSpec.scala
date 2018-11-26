@@ -14,6 +14,7 @@ package com.snowplowanalytics.snowflake.loader.ast
 
 import org.specs2.Specification
 import com.snowplowanalytics.snowflake.core.Config
+import com.snowplowanalytics.snowflake.loader.ast.Select.Substring
 
 class StatementSpec extends Specification { def is = s2"""
   Transform CREATE TABLE AST into String $e1
@@ -50,14 +51,13 @@ class StatementSpec extends Specification { def is = s2"""
       CopyInto.From("other_schema", "stage_name", "path/to/dir"),
       Some(Common.AwsCreds("AAA", "xyz", None)),
       CopyInto.FileFormat("third_schema", "format_name"),
-      Some(CopyInto.SkipFileNum(10000)),
+      None,
       false)
 
     val result = input.getStatement.value
     val expected = "COPY INTO some_schema.some_table(id,foo,fp_id,json) " +
       "FROM @other_schema.stage_name/path/to/dir " +
       "CREDENTIALS = (AWS_KEY_ID = 'AAA' AWS_SECRET_KEY = 'xyz') " +
-      "COPY_OPTIONS = (ON_ERROR = SKIP_FILE_10000) " +
       "FILE_FORMAT = (FORMAT_NAME = 'third_schema.format_name')"
 
     result must beEqualTo(expected)
@@ -67,13 +67,13 @@ class StatementSpec extends Specification { def is = s2"""
     val columns = List(
       Select.CastedColumn("orig_col", "dest_column", SnowflakeDatatype.Variant),
       Select.CastedColumn("orig_col", "next", SnowflakeDatatype.DoublePrecision),
-      Select.CastedColumn("orig_col", "third", SnowflakeDatatype.Number(1, 2)))
+      Select.CastedColumn("orig_col", "third", SnowflakeDatatype.Number(1, 2), Some(Substring(1, 255))))
     val select = Select(columns, "some_schema", "tmp_table")
     val input = Insert.InsertQuery("not_atomic", "events", List("one", "two", "three"), select)
 
     val result = input.getStatement.value
     val expected = "INSERT INTO not_atomic.events(one,two,three) " +
-      "SELECT orig_col:dest_column::VARIANT, orig_col:next::DOUBLE PRECISION, orig_col:third::NUMBER(1,2) " +
+      "SELECT orig_col:dest_column::VARIANT, orig_col:next::DOUBLE PRECISION, substr(orig_col:third::NUMBER(1,2),1,255) " +
       "FROM some_schema.tmp_table"
 
     result must beEqualTo(expected)
@@ -101,7 +101,7 @@ class StatementSpec extends Specification { def is = s2"""
     val result = input.getStatement.value
     val expected = "COPY INTO some_schema.some_table(id,foo,fp_id,json) " +
       "FROM @other_schema.stage_name/path/to/dir " +
-      "COPY_OPTIONS = (ON_ERROR = SKIP_FILE_10000) " +
+      "ON_ERROR = SKIP_FILE_10000 " +
       "FILE_FORMAT = (FORMAT_NAME = 'third_schema.format_name')"
 
     result must beEqualTo(expected)
@@ -131,7 +131,7 @@ class StatementSpec extends Specification { def is = s2"""
     val result = input.getStatement.value
     val expected = "COPY INTO some_schema.some_table(id,foo,fp_id,json) " +
       "FROM @other_schema.stage_name/path/to/dir " +
-      "COPY_OPTIONS = (ON_ERROR = SKIP_FILE_10000) " +
+      "ON_ERROR = SKIP_FILE_10000 " +
       "FILE_FORMAT = (FORMAT_NAME = 'third_schema.format_name' " +
       "STRIP_NULL_VALUES = TRUE)"
 
