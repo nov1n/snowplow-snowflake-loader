@@ -121,7 +121,10 @@ object Loader {
     val castedColumns = tableColumns.map { case (name, dataType) => Select.CastedColumn(Defaults.TempTableColumn, name, dataType) }
     val tempTable = getTempTable(folder.runIdFolder, config.schema)
     val source = Select(castedColumns, tempTable.schema, tempTable.name)
-    Insert.InsertQuery(config.schema, Defaults.Table, tableColumns.map(_._1), source)
+    Insert.InsertQuery(config.schema, Defaults.Table, tableColumns.map(_._1).map({
+      case "refr_term" => "substr(refr_term, 1, 255)"
+      case column: String => column
+    }), source)
   }
 
   /**
