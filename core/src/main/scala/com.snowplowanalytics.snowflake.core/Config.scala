@@ -44,7 +44,9 @@ case class Config(
   account: String,
   warehouse: String,
   database: String,
-  schema: String
+  schema: String,
+  maxError: Option[Int],
+  jdbcHost: Option[String]
 )
 
 object Config {
