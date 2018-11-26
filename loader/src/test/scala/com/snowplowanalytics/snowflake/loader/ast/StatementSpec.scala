@@ -57,7 +57,7 @@ class StatementSpec extends Specification { def is = s2"""
     val expected = "COPY INTO some_schema.some_table(id,foo,fp_id,json) " +
       "FROM @other_schema.stage_name/path/to/dir " +
       "CREDENTIALS = (AWS_KEY_ID = 'AAA' AWS_SECRET_KEY = 'xyz') " +
-      "COPY_OPTIONS = (ON_ERROR = SKIP_FILE_10000) " +
+      "COPY_OPTIONS = (TRUNCATECOLUMNS = TRUE ON_ERROR = SKIP_FILE_10000) " +
       "FILE_FORMAT = (FORMAT_NAME = 'third_schema.format_name')"
 
     result must beEqualTo(expected)
@@ -101,7 +101,7 @@ class StatementSpec extends Specification { def is = s2"""
     val result = input.getStatement.value
     val expected = "COPY INTO some_schema.some_table(id,foo,fp_id,json) " +
       "FROM @other_schema.stage_name/path/to/dir " +
-      "COPY_OPTIONS = (ON_ERROR = SKIP_FILE_10000) " +
+      "COPY_OPTIONS = (TRUNCATECOLUMNS = TRUE ON_ERROR = SKIP_FILE_10000) " +
       "FILE_FORMAT = (FORMAT_NAME = 'third_schema.format_name')"
 
     result must beEqualTo(expected)
@@ -131,7 +131,7 @@ class StatementSpec extends Specification { def is = s2"""
     val result = input.getStatement.value
     val expected = "COPY INTO some_schema.some_table(id,foo,fp_id,json) " +
       "FROM @other_schema.stage_name/path/to/dir " +
-      "COPY_OPTIONS = (ON_ERROR = SKIP_FILE_10000) " +
+      "COPY_OPTIONS = (TRUNCATECOLUMNS = TRUE ON_ERROR = SKIP_FILE_10000) " +
       "FILE_FORMAT = (FORMAT_NAME = 'third_schema.format_name' " +
       "STRIP_NULL_VALUES = TRUE)"
 
