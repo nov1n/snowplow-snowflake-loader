@@ -32,11 +32,11 @@ CREATE TABLE IF NOT EXISTS atomic.events (
       v_etl                       VARCHAR(100)    NOT NULL,
       -- User and visit
       user_id                     VARCHAR(255),
-      user_ipaddress              VARCHAR(45),
-      user_fingerprint            VARCHAR(50),
-      domain_userid               VARCHAR(36),
+      user_ipaddress              VARCHAR(128),
+      user_fingerprint            VARCHAR(128),
+      domain_userid               VARCHAR(128),
       domain_sessionidx           SMALLINT,
-      network_userid              VARCHAR(38),
+      network_userid              VARCHAR(128),
       -- Location
       geo_country                 CHAR(2),
       geo_region                  CHAR(2),
@@ -47,8 +47,8 @@ CREATE TABLE IF NOT EXISTS atomic.events (
       geo_region_name             VARCHAR(100),
       -- IP lookups
       ip_isp                      VARCHAR(100),
-      ip_organization             VARCHAR(100),
-      ip_domain                   VARCHAR(100),
+      ip_organization             VARCHAR(128),
+      ip_domain                   VARCHAR(128),
       ip_netspeed                 VARCHAR(100),
       -- Page
       page_url                    VARCHAR(4096),
@@ -158,10 +158,10 @@ CREATE TABLE IF NOT EXISTS atomic.events (
       -- Time event was sent
       dvce_sent_tstamp            TIMESTAMP,
       -- Referer
-      refr_domain_userid          VARCHAR(36),
+      refr_domain_userid          VARCHAR(128),
       refr_dvce_tstamp            TIMESTAMP,
       -- Session ID
-      domain_sessionid            CHAR(36),
+      domain_sessionid            CHAR(128),
       -- Derived timestamp
       derived_tstamp              TIMESTAMP,
       -- Event schema
