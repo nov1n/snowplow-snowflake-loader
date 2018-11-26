@@ -18,6 +18,7 @@ import java.sql.{DriverManager, SQLException, Connection => JdbcConnection}
 import java.util.Properties
 
 import com.snowplowanalytics.snowflake.core.Config
+import com.snowplowanalytics.snowflake.generated.ProjectMetadata
 
 object Jdbc extends Connection[JdbcConnection] {
 
@@ -47,12 +48,15 @@ object Jdbc extends Connection[JdbcConnection] {
         }
     }
 
+    val userAgent = ProjectMetadata.name + "/" + ProjectMetadata.version
+
     properties.put("user", config.username)
     properties.put("password", password)
     properties.put("account", config.account)
     properties.put("warehouse", config.warehouse)
     properties.put("db", config.database)
     properties.put("schema", config.schema)
+    properties.put("userAgent", userAgent)
 
     val connectStr = s"jdbc:snowflake://$host"
     DriverManager.getConnection(connectStr, properties)
