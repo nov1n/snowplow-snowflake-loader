@@ -78,7 +78,9 @@ class LoaderSpec extends Specification { def is = s2"""
       account = "snowplow-account",
       warehouse = "snowplow_wa",
       database = "database",
-      schema = "not_an_atomic")
+      schema = "not_an_atomic",
+      maxError = None,
+      jdbcHost = None)
 
     val runId = RunId.ProcessedRunId(
       "archive/enriched/run=2017-10-09-17-40-30/",
@@ -138,7 +140,9 @@ class LoaderSpec extends Specification { def is = s2"""
       "snowplow-acc",
       "wh",
       "db",
-      "atomic")
+      "atomic",
+      None,
+      None)
     Loader.exec(LoaderSpec.Mock, connection, new loader.LoaderSpec.ProcessingManifestTest, config)
     val expected = List(
       "SHOW schemas LIKE 'atomic'",
