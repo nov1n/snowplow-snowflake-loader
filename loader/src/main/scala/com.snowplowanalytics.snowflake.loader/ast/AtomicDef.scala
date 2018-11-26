@@ -42,11 +42,11 @@ object AtomicDef {
 
     // User id and visit
     Column("user_id", Varchar(255)),
-    Column("user_ipaddress", Varchar(45)),
-    Column("user_fingerprint", Varchar(50)),
-    Column("domain_userid", Varchar(36)),
+    Column("user_ipaddress", Varchar(128)),
+    Column("user_fingerprint", Varchar(128)),
+    Column("domain_userid", Varchar(128)),
     Column("domain_sessionidx", SmallInt),
-    Column("network_userid", Varchar(38)),
+    Column("network_userid", Varchar(128)),
 
     // Location
     Column("geo_country", Char(2)),
@@ -59,8 +59,8 @@ object AtomicDef {
 
     // Ip lookups
     Column("ip_isp", Varchar(100)),
-    Column("ip_organization", Varchar(100)),
-    Column("ip_domain", Varchar(100)),
+    Column("ip_organization", Varchar(128)),
+    Column("ip_domain", Varchar(128)),
     Column("ip_netspeed", Varchar(100)),
 
     // Page
@@ -189,11 +189,11 @@ object AtomicDef {
     Column("dvce_sent_tstamp", Timestamp),
 
     // Referer
-    Column("refr_domain_userid", Varchar(36)),
+    Column("refr_domain_userid", Varchar(128)),
     Column("refr_dvce_tstamp", Timestamp),
 
     // Session ID
-    Column("domain_sessionid", Char(36)),
+    Column("domain_sessionid", Char(128)),
 
     // Derived timestamp
     Column("derived_tstamp", Timestamp),
