@@ -23,5 +23,6 @@ import Select._
 case class Select(columns: List[CastedColumn], schema: String, table: String)
 
 object Select {
-  case class CastedColumn(originColumn: String, columnName: String, datatype: SnowflakeDatatype)
+  case class CastedColumn(originColumn: String, columnName: String, datatype: SnowflakeDatatype, substring: Option[Substring] = None)
+  case class Substring(start: Int, length: Int)
 }

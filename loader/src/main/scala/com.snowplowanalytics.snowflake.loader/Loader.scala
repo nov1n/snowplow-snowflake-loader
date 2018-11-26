@@ -14,11 +14,10 @@ package com.snowplowanalytics.snowflake
 package loader
 
 import scala.util.control.NonFatal
-
 import cats.data.{Validated, ValidatedNel}
 import cats.implicits._
-
 import ast._
+import ast.Select.Substring
 import core._
 import connection._
 import ProcessManifest._
@@ -118,7 +117,15 @@ object Loader {
   /** Create INSERT statement to load Processed Run Id */
   def getInsertStatement(config: Config, folder: RunId.ProcessedRunId): Insert = {
     val tableColumns = getColumns(folder.shredTypes)
-    val castedColumns = tableColumns.map { case (name, dataType) => Select.CastedColumn(Defaults.TempTableColumn, name, dataType) }
+    val castedColumns = tableColumns.map {
+      // Truncate columns
+      case ("page_title", dataType) => Select.CastedColumn(Defaults.TempTableColumn, "page_title", dataType, Some(Substring(1, 2000)))
+      case ("page_referrer", dataType) => Select.CastedColumn(Defaults.TempTableColumn, "page_referrer", dataType, Some(Substring(1, 4096)))
+      case ("page_urlpath", dataType) => Select.CastedColumn(Defaults.TempTableColumn, "page_urlpath", dataType, Some(Substring(1, 3000)))
+      case ("refr_term", dataType) => Select.CastedColumn(Defaults.TempTableColumn, "refr_term", dataType, Some(Substring(1, 255)))
+      case ("mkt_clickid", dataType) => Select.CastedColumn(Defaults.TempTableColumn, "mkt_clickid", dataType, Some(Substring(1, 128)))
+      case (name, dataType) => Select.CastedColumn(Defaults.TempTableColumn, name, dataType)
+    }
     val tempTable = getTempTable(folder.runIdFolder, config.schema)
     val source = Select(castedColumns, tempTable.schema, tempTable.name)
     Insert.InsertQuery(config.schema, Defaults.Table, tableColumns.map(_._1), source)
