@@ -1,0 +1,25 @@
+{
+  "schema": "iglu:com.snowplowanalytics.snowplow.storage/snowflake_config/jsonschema/1-0-1",
+  "data": {
+    "name": "Snowflake",
+    "auth": {
+      "accessKeyId": "ABCD",
+      "secretAccessKey": "abcd"
+    },
+    "awsRegion": "us-east-1",
+    "manifest": "snowflake-manifest",
+    "snowflakeRegion": "us-west-1",
+    "database": "test_db",
+    "input": "s3://snowflake/input/",
+    "stage": "some_stage",
+    "stageUrl": "s3://snowflake/output/",
+    "warehouse": "snowplow_wh",
+    "schema": "atomic",
+    "account": "snowplow",
+    "username": "anton",
+    "password": "Supersecret2",
+    "purpose": "ENRICHED_EVENTS",
+    "maxError": 10000,
+    "jdbcHost": "snowplow.us-west-1.azure.snowflakecomputing.com"
+  }
+}

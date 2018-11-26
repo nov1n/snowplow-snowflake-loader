@@ -21,9 +21,17 @@ case class CopyInto(
   from: From,
   credentials: Option[Common.AwsCreds],
   fileFormat: FileFormat,
+  onError: Option[OnError],
   stripNullValues: Boolean)   // Valid only for JSON
 
 object CopyInto {
   case class From(schema: String, stageName: String, path: String)
   case class FileFormat(schema: String, formatName: String)
+
+  sealed trait OnError
+  case object Continue extends OnError
+  case object SkipFile extends OnError
+  case class SkipFileNum(value: Int) extends OnError
+  case class SkipFilePercentage(value: Int) extends OnError
+  case object AbortStatement extends OnError
 }
