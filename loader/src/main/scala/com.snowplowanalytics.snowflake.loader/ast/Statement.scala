@@ -13,6 +13,7 @@
 package com.snowplowanalytics.snowflake.loader.ast
 
 import cats.implicits._
+import com.snowplowanalytics.snowflake.loader.ast.CopyInto._
 
 trait Statement[-S] {
   def getStatement(ast: S): Statement.SqlStatement
@@ -120,9 +121,18 @@ object Statement {
           s" CREDENTIALS = (AWS_KEY_ID = '${c.awsAccessKeyId}' AWS_SECRET_KEY = '${c.awsSecretKey}'$token)"
         case None => ""  // Expect credentials are available in stage
       }
+      val onError = ast.onError match {
+        case Some(Continue) => s"CONTINUE"
+        case Some(SkipFile) => s"SKIP_FILE"
+        case Some(SkipFileNum(value)) => s"SKIP_FILE_$value"
+        case Some(SkipFilePercentage(value)) => s"SKIP_FILE_$value%"
+        case Some(AbortStatement) => s"ABORT_STATEMENT"
+        case None => ""
+      }
+      val copyOptions = if (onError == "") "" else s" COPY_OPTIONS = (ON_ERROR = $onError)"
       val stripNulls = if (ast.stripNullValues) " STRIP_NULL_VALUES = TRUE"
       else ""
-      SqlStatement(s"COPY INTO ${ast.schema}.${ast.table}(${ast.columns.mkString(",")}) FROM @${ast.from.schema}.${ast.from.stageName}/${ast.from.path}$credentials FILE_FORMAT = (FORMAT_NAME = '${ast.fileFormat.schema}.${ast.fileFormat.formatName}'$stripNulls)" )
+      SqlStatement(s"COPY INTO ${ast.schema}.${ast.table}(${ast.columns.mkString(",")}) FROM @${ast.from.schema}.${ast.from.stageName}/${ast.from.path}$credentials$copyOptions FILE_FORMAT = (FORMAT_NAME = '${ast.fileFormat.schema}.${ast.fileFormat.formatName}'$stripNulls)" )
 
     }
   }
