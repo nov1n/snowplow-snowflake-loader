@@ -28,7 +28,7 @@ object Initializer {
 
     Jdbc.executeAndOutput(connection, CreateSchema(config.schema))
     Jdbc.executeAndOutput(connection, AtomicDef.getTable(config.schema))
-    Jdbc.executeAndOutput(connection, CreateWarehouse(config.warehouse, size = Some(CreateWarehouse.XSmall)))
+    Jdbc.executeAndOutput(connection, CreateWarehouse(config.warehouse, size = Some(CreateWarehouse.XSmall), autoSuspend = Some(300), autoResume = Some(true)))
     Jdbc.executeAndOutput(connection, CreateFileFormat.CreateJsonFormat(Defaults.FileFormat))
     Jdbc.executeAndOutput(connection, CreateStage(
       config.stage, config.stageUrl, Defaults.FileFormat, config.schema, credentials))
