@@ -171,6 +171,7 @@ object Loader {
       CopyInto.From(config.schema, config.stage, runId),
       credentials,
       CopyInto.FileFormat(config.schema, Defaults.FileFormat),
+      config.maxError.map(CopyInto.SkipFileNum),
       true)
 
     db.execute(connection, tempTableCreateStatement)
