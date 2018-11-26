@@ -26,11 +26,14 @@ object Jdbc extends Connection[JdbcConnection] {
     Class.forName("net.snowflake.client.jdbc.SnowflakeDriver")
 
     // US West is default: https://docs.snowflake.net/manuals/user-guide/jdbc-configure.html#jdbc-driver-connection-string
-    val host = if (config.snowflakeRegion == "us-west-1")
-      s"${config.account}.snowflakecomputing.com"
-    else
-      s"${config.account}.${config.snowflakeRegion}.snowflakecomputing.com"
-
+    val host = config.jdbcHost match {
+      case Some(overrideHost) => overrideHost
+      case None =>
+        if (config.snowflakeRegion == "us-west-1")
+          s"${config.account}.snowflakecomputing.com"
+        else
+          s"${config.account}.${config.snowflakeRegion}.snowflakecomputing.com"
+    }
     // Build connection properties
     val properties = new Properties()
 
