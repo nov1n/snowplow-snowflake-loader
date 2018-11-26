@@ -13,7 +13,6 @@
 package com.snowplowanalytics.snowflake.loader.ast
 
 import org.specs2.Specification
-
 import com.snowplowanalytics.snowflake.core.Config
 
 class StatementSpec extends Specification { def is = s2"""
@@ -24,6 +23,7 @@ class StatementSpec extends Specification { def is = s2"""
   Transform COPY INTO AST (without credentials) into String $e5
   Transform CREATE STAGE AST into String $e6
   Transform COPY INTO AST (with stripping nulls) into String $e7
+  Transform CREATE WAREHOUSE AST into String $e8
   """
 
   def e1 = {
@@ -128,6 +128,22 @@ class StatementSpec extends Specification { def is = s2"""
       "FROM @other_schema.stage_name/path/to/dir " +
       "FILE_FORMAT = (FORMAT_NAME = 'third_schema.format_name' " +
       "STRIP_NULL_VALUES = TRUE)"
+
+    result must beEqualTo(expected)
+  }
+
+  def e8 = {
+    val input = CreateWarehouse(
+      "snowplow_wh",
+      Some(CreateWarehouse.Small),
+      Some(500),
+      Some(false))
+
+    val result = input.getStatement.value
+    val expected = "CREATE WAREHOUSE IF NOT EXISTS snowplow_wh " +
+      "WAREHOUSE_SIZE = SMALL " +
+      "AUTO_SUSPEND = 500 " +
+      "AUTO_RESUME = FALSE"
 
     result must beEqualTo(expected)
   }
