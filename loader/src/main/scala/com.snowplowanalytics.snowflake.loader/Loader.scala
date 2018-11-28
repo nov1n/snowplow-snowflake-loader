@@ -22,6 +22,7 @@ import core._
 import connection._
 import ProcessManifest._
 import loader.connection.Connection
+import SnowflakeDatatype.{Char,Varchar}
 
 object Loader {
 
@@ -119,7 +120,10 @@ object Loader {
     val tableColumns = getColumns(folder.shredTypes)
     val castedColumns = tableColumns.map {
       // Truncate columns
-      case ("refr_term", dataType) => Select.CastedColumn(Defaults.TempTableColumn, "refr_term", dataType, Some(Substring(1, 255)))
+      case ("refr_term", Varchar(Some(_))) => Select.CastedColumn(Defaults.TempTableColumn, "refr_term", Varchar(None), Some(Substring(1, 255)))
+      // Remove VARCHAR precision (#54)
+      case (name, Varchar(Some(_))) => Select.CastedColumn(Defaults.TempTableColumn, name, Varchar(None))
+      case (name, Char(_)) => Select.CastedColumn(Defaults.TempTableColumn, name, Varchar(None))
       case (name, dataType) => Select.CastedColumn(Defaults.TempTableColumn, name, dataType)
     }
     val tempTable = getTempTable(folder.runIdFolder, config.schema)
