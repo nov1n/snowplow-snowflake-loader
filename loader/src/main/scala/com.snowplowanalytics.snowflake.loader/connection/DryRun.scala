@@ -92,5 +92,10 @@ object DryRun extends Connection[DryRun] {
     connection.log(ast)
     1 // Used for preliminary checks
   }
+
+  def executeAndReturnResult[S: Statement](connection: DryRun, ast: S): List[Map[String, Object]] = {
+    connection.log(ast)
+    List.empty
+  }
 }
 
