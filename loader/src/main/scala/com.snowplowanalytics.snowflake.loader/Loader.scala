@@ -27,12 +27,16 @@ import SnowflakeDatatype.{Char,Varchar}
 object Loader {
 
   /** Check that necessary Snowflake entities are available before actual load */
-  def preliminaryChecks[C](db: Connection[C], connection: C, schemaName: String, stageName: String, warehouseName: String): ValidatedNel[String, Unit] = {
+  def preliminaryChecks[C](db: Connection[C], connection: C, schemaName: String, stageName: String, stageUrl: String, warehouseName: String): ValidatedNel[String, Unit] = {
     val schema = if (db.executeAndCountRows(connection, Show.ShowSchemas(Some(schemaName))) < 1)
       s"Schema $schemaName does not exist".invalidNel
     else ().validNel
     val stage = if (db.executeAndCountRows(connection, Show.ShowStages(Some(stageName), Some(schemaName))) < 1)
       s"Stage $stageName does not exist".invalidNel
+    else ().validNel
+    val snowflakeUrl = db.executeAndReturnResult(connection, Show.ShowStages(Some(stageName), Some(schemaName))).head("url").toString
+    val stageUrlMatch = if (snowflakeUrl != stageUrl)
+      s"Stage URL $stageUrl does not match specified in Snowflake $snowflakeUrl".invalidNel
     else ().validNel
     val table = if (db.executeAndCountRows(connection, Show.ShowTables(Some(Defaults.Table), Some(schemaName))) < 1)
       s"Table ${Defaults.Table} does not exist".invalidNel
@@ -44,7 +48,7 @@ object Loader {
       s"Warehouse $warehouseName does not exist".invalidNel
     else ().validNel
 
-    (schema, stage, table, fileFormat, warehouse).map5 { (_: Unit, _: Unit, _: Unit, _: Unit, _: Unit) => () }
+    (schema, stage, stageUrlMatch, table, fileFormat, warehouse).map6 { (_: Unit, _: Unit, _: Unit, _: Unit, _: Unit, _: Unit) => () }
   }
 
   def exec[C](db: Connection[C], connection: C, manifest: ProcessManifest.Loader, config: Config): Unit = {
@@ -55,7 +59,7 @@ object Loader {
         sys.exit(1)
     }
 
-    preliminaryChecks(db, connection, config.schema, config.stage, config.warehouse) match {
+    preliminaryChecks(db, connection, config.schema, config.stage, config.stageUrl.toString, config.warehouse) match {
       case Validated.Valid(()) => println("Preliminary checks passed")
       case Validated.Invalid(errors) =>
         val message = s"Preliminary checks failed. ${errors.toList.mkString(", ")}"
@@ -74,6 +78,15 @@ object Loader {
       } catch {
         case _: net.snowflake.client.jdbc.SnowflakeSQLException =>
           println(s"Warehouse ${config.warehouse} already resumed")
+      }
+
+      // Check that folders are located inside stage (#62)
+      state.foldersToLoad.foreach { folder =>
+        if (!folder.folderToLoad.savedTo.isSubdirOf(config.stageUrl)) {
+          val message = s"Folder ${folder.folderToLoad.savedTo} is located outside of stage ${config.stageUrl}, skipping..."
+          System.err.println(message)
+          sys.exit(1)
+        }
       }
 
       // Add each folder in transaction

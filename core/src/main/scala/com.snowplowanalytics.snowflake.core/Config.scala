@@ -278,11 +278,14 @@ object Config {
   class S3Folder(val path: String) extends AnyVal {
     /** Split valid S3 folder path to bucket and path */
     def splitS3Folder: (String, String) =
-      path.stripPrefix("s3://").split("/").toList match {
+      stripS3Prefix(path).split("/").toList match {
         case head :: Nil => (head, "/")
         case head :: tail => (head, tail.mkString("/") + "/")
         case Nil => throw new IllegalArgumentException(s"Invalid S3 bucket path was passed") // Impossible
       }
+
+    def isSubdirOf(other: S3Folder): Boolean =
+      stripS3Prefix(path).startsWith(stripS3Prefix(other.toString))
 
     override def toString: String = path
   }
@@ -317,4 +320,7 @@ object Config {
   private def appendTrailingSlash(s: String): S3Folder =
     if (s.endsWith("/")) new S3Folder(s)
     else new S3Folder(s + "/")
+
+  private def stripS3Prefix(s: String): String =
+    s.stripPrefix("s3://")
 }

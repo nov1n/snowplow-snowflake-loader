@@ -232,6 +232,11 @@ object LoaderSpec {
       connection.log(ast.getStatement.value)
       1 // Used for preliminary checks
     }
+
+    def executeAndReturnResult[S: Statement](connection: Mock, ast: S): List[Map[String, Object]] = {
+      connection.log(ast.getStatement.value)
+      List(Map("url" -> "s3://archive/")) // Used for stageUrl check
+    }
   }
 
   class ProcessingManifestTest extends ProcessManifest.Loader {
