@@ -15,9 +15,9 @@ package com.snowplowanalytics.snowflake.loader.ast
 sealed trait SnowflakeDatatype
 
 object SnowflakeDatatype {
-  case class Varchar(size: Int) extends SnowflakeDatatype
+  case class Varchar(size: Option[Int]) extends SnowflakeDatatype
   case object Timestamp extends SnowflakeDatatype
-  case class Char(size: Int) extends SnowflakeDatatype
+  case class Char(size: Option[Int]) extends SnowflakeDatatype
   case object SmallInt extends SnowflakeDatatype
   case object DoublePrecision extends SnowflakeDatatype
   case object Integer extends SnowflakeDatatype
