@@ -117,7 +117,7 @@ class LoaderSpec extends Specification { def is = s2"""
           Select.CastedColumn("enriched_data","unstruct_event_com_snowplowanalytics_snowplow_link_click_1", SnowflakeDatatype.JsonObject),
           Select.CastedColumn("enriched_data", "contexts_com_snowplowanalytics_snowplow_web_page_1", SnowflakeDatatype.JsonArray),
           Select.CastedColumn("enriched_data", "true_tstamp", SnowflakeDatatype.Timestamp),
-          Select.CastedColumn("enriched_data", "refr_domain_userid", SnowflakeDatatype.Varchar(128))))
+          Select.CastedColumn("enriched_data", "refr_domain_userid", SnowflakeDatatype.Varchar(None))))
 
         schemaResult.and(tableResult).and(columnsAmount)
           .and(sSchemaResult).and(sTableResult).and(sColumnsAmount)
