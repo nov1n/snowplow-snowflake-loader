@@ -17,6 +17,8 @@ import ast._
 import java.sql.{DriverManager, SQLException, Connection => JdbcConnection}
 import java.util.Properties
 
+import scala.collection.mutable.ListBuffer
+
 import com.snowplowanalytics.snowflake.core.Config
 import com.snowplowanalytics.snowflake.generated.ProjectMetadata
 
@@ -108,5 +110,22 @@ object Jdbc extends Connection[JdbcConnection] {
       i = i + 1
     }
     i
+  }
+
+  /** Execute SQL query and return result */
+  def executeAndReturnResult[S: Statement](connection: JdbcConnection, ast: S): List[Map[String, Object]] = {
+    val statement = connection.createStatement()
+    val rs = statement.executeQuery(ast.getStatement.value)
+    val metadata = rs.getMetaData
+    var result = new ListBuffer[Map[String, Object]]()
+
+    while (rs.next()) {
+      var row = (for (i <- 1 to metadata.getColumnCount) yield metadata.getColumnName(i) -> rs.getObject(i)).toMap
+      result += row
+    }
+
+    rs.close()
+    statement.close()
+    result.toList
   }
 }

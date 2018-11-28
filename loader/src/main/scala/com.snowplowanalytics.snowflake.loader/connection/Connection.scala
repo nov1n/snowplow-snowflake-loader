@@ -26,4 +26,5 @@ trait Connection[C] {
   def rollbackTransaction(connection: C): Unit
   def executeAndOutput[S: Statement](connection: C, ast: S): Unit
   def executeAndCountRows[S: Statement](connection: C, ast: S): Int
+  def executeAndReturnResult[S: Statement](connection: C, ast: S): List[Map[String, Object]]
 }
