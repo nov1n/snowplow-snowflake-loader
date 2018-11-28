@@ -75,6 +75,15 @@ object Loader {
           println(s"Warehouse ${config.warehouse} already resumed")
       }
 
+      // Check that folders are located inside stage (#62)
+      state.foldersToLoad.foreach { folder =>
+        if (!folder.folderToLoad.savedTo.isSubdirOf(config.stageUrl)) {
+          val message = s"Folder ${folder.folderToLoad.savedTo} is located outside of stage ${config.stageUrl}, skipping..."
+          System.err.println(message)
+          sys.exit(1)
+        }
+      }
+
       // Add each folder in transaction
       state.foldersToLoad.foreach { folder =>
         val transactionName = s"snowplow_${folder.folderToLoad.runIdFolder}".replaceAll("=", "_").replaceAll("-", "_")
