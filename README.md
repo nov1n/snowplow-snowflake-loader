@@ -1,5 +1,16 @@
 # Snowplow Snowflake Loader
 
+## Overview
+
+Snowflake Loader is a project to load Snowplow enriched events into the [Snowflake cloud data warehouse][snowflake]. It consists on two independent applications:
+
+- *Snowplow Snowflake Transformer* - a Spark job responsible for transforming enriched events into a Snowflake-compatible format;
+- *Snowplow Snowflake Loader* - a CLI application responsible for loading Snowplow-compatible enriched events into Snowflake DB.
+
+| **[Technical Docs][techdocs]**    | **[Setup Guide][setup]**    | **[Contributing][contributing]**          |
+|-----------------------------------|-----------------------------|-------------------------------------------|
+| [![i1][techdocs-image]][techdocs] | [![i2][setup-image]][setup] | [![i3][contributing-image]][contributing] |
+
 ## Quickstart
 
 Assuming git, **[Vagrant][vagrant-install]** and **[VirtualBox][virtualbox-install]** installed:
@@ -36,3 +47,14 @@ limitations under the License.
 
 [release-image]: http://img.shields.io/badge/release-0.3.1-blue.svg?style=flat
 [releases]: https://github.com/snowplow/snowplowsnowflaketransformer/releases
+
+[snowflake]: https://www.snowflake.com/
+
+[techdocs]: https://github.com/snowplow-incubator/snowplow-snowflake-loader/wiki/
+[techdocs-image]: https://d3i6fms1cm1j0i.cloudfront.net/github/images/techdocs.png
+
+[setup]: https://github.com/snowplow-incubator/snowplow-snowflake-loader/wiki/Setup-Guide
+[setup-image]: https://d3i6fms1cm1j0i.cloudfront.net/github/images/setup.png
+
+[contributing]: https://github.com/snowplow-incubator/snowplow-snowflake-loader/wiki/
+[contributing-image]: https://d3i6fms1cm1j0i.cloudfront.net/github/images/contributing.png
