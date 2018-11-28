@@ -30,7 +30,7 @@ class StatementSpec extends Specification { def is = s2"""
   def e1 = {
     val columns = List(
       Column("id", SnowflakeDatatype.Number(2, 6), notNull = true),
-      Column("foo", SnowflakeDatatype.Varchar(128), unique = true),
+      Column("foo", SnowflakeDatatype.Varchar(Some(128)), unique = true),
       Column("long_column_name", SnowflakeDatatype.DoublePrecision, unique = true, notNull = true),
       Column("baz", SnowflakeDatatype.Variant))
     val input = CreateTable("nonatomic", "data", columns, None)

@@ -22,6 +22,7 @@ import core._
 import connection._
 import ProcessManifest._
 import loader.connection.Connection
+import SnowflakeDatatype.{Char,Varchar}
 
 object Loader {
 
@@ -118,12 +119,15 @@ object Loader {
   def getInsertStatement(config: Config, folder: RunId.ProcessedRunId): Insert = {
     val tableColumns = getColumns(folder.shredTypes)
     val castedColumns = tableColumns.map {
-      // Truncate columns
-      case ("page_title", dataType) => Select.CastedColumn(Defaults.TempTableColumn, "page_title", dataType, Some(Substring(1, 2000)))
-      case ("page_referrer", dataType) => Select.CastedColumn(Defaults.TempTableColumn, "page_referrer", dataType, Some(Substring(1, 4096)))
-      case ("page_urlpath", dataType) => Select.CastedColumn(Defaults.TempTableColumn, "page_urlpath", dataType, Some(Substring(1, 3000)))
-      case ("refr_term", dataType) => Select.CastedColumn(Defaults.TempTableColumn, "refr_term", dataType, Some(Substring(1, 255)))
-      case ("mkt_clickid", dataType) => Select.CastedColumn(Defaults.TempTableColumn, "mkt_clickid", dataType, Some(Substring(1, 128)))
+      // Truncate problematic columns (#55)
+      case ("page_title", Varchar(Some(_))) => Select.CastedColumn(Defaults.TempTableColumn, "page_title", Varchar(None), Some(Substring(1, 2000)))
+      case ("page_referrer", Varchar(Some(_))) => Select.CastedColumn(Defaults.TempTableColumn, "page_referrer", Varchar(None), Some(Substring(1, 4096)))
+      case ("page_urlpath", Varchar(Some(_))) => Select.CastedColumn(Defaults.TempTableColumn, "page_urlpath", Varchar(None), Some(Substring(1, 3000)))
+      case ("refr_term", Varchar(Some(_))) => Select.CastedColumn(Defaults.TempTableColumn, "refr_term", Varchar(None), Some(Substring(1, 255)))
+      case ("mkt_clickid", Varchar(Some(_))) => Select.CastedColumn(Defaults.TempTableColumn, "mkt_clickid", Varchar(None), Some(Substring(1, 128)))
+      // Remove VARCHAR precision (#54)
+      case (name, Varchar(Some(_))) => Select.CastedColumn(Defaults.TempTableColumn, name, Varchar(None))
+      case (name, Char(_)) => Select.CastedColumn(Defaults.TempTableColumn, name, Varchar(None))
       case (name, dataType) => Select.CastedColumn(Defaults.TempTableColumn, name, dataType)
     }
     val tempTable = getTempTable(folder.runIdFolder, config.schema)
