@@ -21,7 +21,8 @@ import ast.SnowflakeDatatype._
 package object ast {
   implicit object DatatypeShow extends Show[SnowflakeDatatype] {
     def show(ddl: SnowflakeDatatype): String = ddl match {
-      case Varchar(size)            => s"VARCHAR($size)"
+      case Varchar(Some(size))      => s"VARCHAR($size)"
+      case Varchar(None)            => s"VARCHAR"
       case Timestamp                => "TIMESTAMP"
       case Char(size)               => s"CHAR($size)"
       case SmallInt                 => "SMALLINT"
