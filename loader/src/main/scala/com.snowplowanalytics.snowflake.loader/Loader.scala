@@ -14,15 +14,14 @@ package com.snowplowanalytics.snowflake
 package loader
 
 import scala.util.control.NonFatal
-
 import cats.data.{Validated, ValidatedNel}
 import cats.implicits._
-
 import ast._
 import core._
 import connection._
 import ProcessManifest._
 import loader.connection.Connection
+import SnowflakeDatatype.{Char,Varchar}
 
 object Loader {
 
@@ -118,7 +117,11 @@ object Loader {
   /** Create INSERT statement to load Processed Run Id */
   def getInsertStatement(config: Config, folder: RunId.ProcessedRunId): Insert = {
     val tableColumns = getColumns(folder.shredTypes)
-    val castedColumns = tableColumns.map { case (name, dataType) => Select.CastedColumn(Defaults.TempTableColumn, name, dataType) }
+    val castedColumns = tableColumns.map {
+      // Remove VARCHAR precision (#54)
+      case (name, Varchar(Some(_))) => Select.CastedColumn(Defaults.TempTableColumn, name, Varchar(None))
+      case (name, dataType) => Select.CastedColumn(Defaults.TempTableColumn, name, dataType)
+    }
     val tempTable = getTempTable(folder.runIdFolder, config.schema)
     val source = Select(castedColumns, tempTable.schema, tempTable.name)
     Insert.InsertQuery(config.schema, Defaults.Table, tableColumns.map(_._1), source)
