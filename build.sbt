@@ -12,13 +12,27 @@
  */
 lazy val root = project.in(file("."))
   .settings(BuildSettings.buildSettings)
-  .aggregate(core, loader, transformer)
+  .aggregate(manifest, core, loader, transformer)
+
+// TODO remove after Maven release
+lazy val manifest = project
+  .settings(moduleName := "snowplow-events-manifest")
+  .settings(BuildSettings.assemblySettings)
+  .settings(BuildSettings.buildSettings)
+  .settings(BuildSettings.dynamoDbSettings)
+  .settings(
+    resolvers ++= Seq(
+      "Sonatype OSS Snapshots" at "http://oss.sonatype.org/content/repositories/snapshots/"
+    ),
+    libraryDependencies ++= commonDependencies
+  )
 
 lazy val core = project
   .settings(moduleName := "snowplow-snowflake-core")
   .settings(BuildSettings.buildSettings)
   .settings(BuildSettings.scalifySettings)
   .settings(libraryDependencies ++= commonDependencies)
+  .dependsOn(manifest)
 
 lazy val loader = project
   .settings(moduleName := "snowplow-snowflake-loader")
@@ -57,7 +71,7 @@ lazy val commonDependencies = Seq(
   Dependencies.s3,
   Dependencies.dynamodb,
   Dependencies.igluClient,
-  Dependencies.eventsManifest,
+  // TODO uncomment after Maven release: Dependencies.eventsManifest,
   // Scala (test-only)
   Dependencies.specs2,
   Dependencies.scalazSpecs2,
