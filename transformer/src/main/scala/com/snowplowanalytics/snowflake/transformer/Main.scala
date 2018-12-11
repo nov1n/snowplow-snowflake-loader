@@ -25,8 +25,8 @@ object Main {
 
         // Always use EMR Role role for manifest-access
         val s3 = ProcessManifest.getS3(appConfig.awsRegion)
-        val dynamoDb = ProcessManifest.getDynamoDb(appConfig.awsRegion)
-        val manifest = ProcessManifest.AwsProcessingManifest(s3, dynamoDb)
+        ProcessManifest.buildDynamoDb(appConfig.awsRegion)
+        val manifest = ProcessManifest.AwsProcessingManifest(s3)
         val eventsManifest = eventsManifestConfig.map {
           EventsManifest.initStorage(_) match {
             case Success(storage) => storage
