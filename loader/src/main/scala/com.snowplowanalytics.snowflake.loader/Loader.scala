@@ -116,11 +116,11 @@ object Loader {
   /** Scan state from processing manifest, extract not-loaded folders and lot each of them */
   def run(config: Config.CliLoaderConfiguration): Unit = {
     if (config.dryRun) {
-      val dynamoDb = ProcessManifest.getDynamoDb(config.loaderConfig.awsRegion)
-      exec(DryRun, new DryRun(), DryRunProcessingManifest(dynamoDb), config.loaderConfig)
+      ProcessManifest.buildDynamoDb(config.loaderConfig.awsRegion)
+      exec(DryRun, new DryRun(), DryRunProcessingManifest, config.loaderConfig)
     } else {
-      val dynamoDb = ProcessManifest.getDynamoDb(config.loaderConfig.awsRegion)
-      val manifest = AwsLoaderProcessingManifest(dynamoDb)
+      ProcessManifest.buildDynamoDb(config.loaderConfig.awsRegion)
+      val manifest = AwsLoaderProcessingManifest
       val connection = Jdbc.getConnection(config.loaderConfig)
       exec(Jdbc, connection, manifest, config.loaderConfig)
     }
