@@ -24,8 +24,8 @@ object Main {
 
         // Always use EMR Role role for manifest-access
         val s3 = ProcessManifest.getS3(appConfig.awsRegion)
-        val dynamoDb = ProcessManifest.getDynamoDb(appConfig.awsRegion)
-        val manifest = ProcessManifest.AwsProcessingManifest(s3, dynamoDb)
+        ProcessManifest.buildDynamoDb(appConfig.awsRegion)
+        val manifest = ProcessManifest.AwsProcessingManifest(s3)
 
         // Eager SparkContext initializing to avoid YARN timeout
         val config = new SparkConf()
