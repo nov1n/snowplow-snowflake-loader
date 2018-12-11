@@ -13,22 +13,18 @@
 package com.snowplowanalytics.snowflake.core
 
 import cats.implicits._
-
 import java.util.{Map => JMap}
 
 import scala.annotation.tailrec
-
 import scala.collection.convert.decorateAsJava._
 import scala.collection.convert.decorateAsScala._
 import scala.util.control.NonFatal
-
+import com.amazonaws.AmazonServiceException
 import com.amazonaws.auth.{AWSCredentials, AWSStaticCredentialsProvider, BasicAWSCredentials, DefaultAWSCredentialsProviderChain}
 import com.amazonaws.services.dynamodbv2.{AmazonDynamoDB, AmazonDynamoDBClientBuilder}
 import com.amazonaws.services.dynamodbv2.model._
 import com.amazonaws.services.s3.{AmazonS3, AmazonS3ClientBuilder}
-
 import org.joda.time.{DateTime, DateTimeZone}
-
 import com.snowplowanalytics.snowplow.analytics.scalasdk.RunManifests
 import com.snowplowanalytics.snowflake.core.Config.S3Folder
 import com.snowplowanalytics.snowflake.generated.ProjectMetadata
@@ -54,11 +50,35 @@ object ProcessManifest {
 
   type DbItem = JMap[String, AttributeValue]
 
+  /** Singleton client to be recreated on failure (#51) */
+  var dynamodbClient: AmazonDynamoDB = _
+
+  /** Parameters for client recreation */
+  val maxRetries = 5
+  var region: String = ""
+
   /** Get DynamoDB client */
-  def getDynamoDb(awsRegion: String) = {
+  def buildDynamoDb(awsRegion: String) = {
     val credentials = DefaultAWSCredentialsProviderChain.getInstance().getCredentials
     val provider = new AWSStaticCredentialsProvider(credentials)
-    AmazonDynamoDBClientBuilder.standard().withRegion(awsRegion).withCredentials(provider).build()
+    dynamodbClient = AmazonDynamoDBClientBuilder.standard().withRegion(awsRegion).withCredentials(provider).build()
+    region = awsRegion
+  }
+
+  /** Run a DynamoDB query; recreate the client on expired token exception */
+  def runDynamoDbQuery[T](query: => T): T = {
+    for (_ <- 1 until maxRetries) {
+      try {
+        val result = query
+        result
+      } catch {
+        case e: AmazonServiceException if e.getMessage.contains("The security token included in the request is expired") => buildDynamoDb(region)
+      }
+    }
+
+    /** Do not attempt to recreate the client after maxRetries attempts */
+    val result = query
+    result
   }
 
   /** Get S3 client */
@@ -76,8 +96,6 @@ object ProcessManifest {
   /** Entity being able to return processed folders from real-world DynamoDB table */
   trait AwsScan {
 
-    def dynamodbClient: AmazonDynamoDB
-
     /** Get all folders with their state */
     def scan(tableName: String): Either[String, List[RunId]] = {
 
@@ -87,7 +105,7 @@ object ProcessManifest {
         Option(last.getLastEvaluatedKey) match {
           case Some(key) =>
             val req = getRequest.withExclusiveStartKey(key)
-            val response = dynamodbClient.scan(req)
+            val response = runDynamoDbQuery[ScanResult] { ProcessManifest.dynamodbClient.scan(req) }
             val items = response.getItems
             go(response, items.asScala.toList ++ acc)
           case None => acc
@@ -95,7 +113,7 @@ object ProcessManifest {
       }
 
       val scanResult = try {
-        val firstResponse = dynamodbClient.scan(getRequest)
+        val firstResponse = runDynamoDbQuery[ScanResult] { ProcessManifest.dynamodbClient.scan(getRequest) }
         val initAcc = firstResponse.getItems.asScala.toList
         Right(go(firstResponse, initAcc).map(_.asScala))
       } catch {
@@ -112,8 +130,6 @@ object ProcessManifest {
   /** Entity being able to mark folder as processed in real-world DynamoDB table */
   trait AwsLoader { Loader =>
 
-    def dynamodbClient: AmazonDynamoDB
-
     def markLoaded(tableName: String, runId: String): Unit = {
       val now = (DateTime.now(DateTimeZone.UTC).getMillis / 1000).toInt
 
@@ -127,11 +143,11 @@ object ProcessManifest {
           "LoadedBy" -> new AttributeValueUpdate().withValue(new AttributeValue(ProjectMetadata.version))
         ).asJava)
 
-      val _ = dynamodbClient.updateItem(request)
+      val _ = runDynamoDbQuery[UpdateItemResult] { ProcessManifest.dynamodbClient.updateItem(request) }
     }
   }
 
-  case class AwsProcessingManifest(s3Client: AmazonS3, dynamodbClient: AmazonDynamoDB)
+  case class AwsProcessingManifest(s3Client: AmazonS3)
     extends ProcessManifest
       with Loader
       with AwsLoader
@@ -149,7 +165,7 @@ object ProcessManifest {
           "ToSkip" -> new AttributeValue().withBOOL(false)
         ).asJava)
 
-      val _ = dynamodbClient.putItem(request)
+      val _ = runDynamoDbQuery[PutItemResult] { ProcessManifest.dynamodbClient.putItem(request) }
     }
 
     def markProcessed(tableName: String, runId: String, shredTypes: List[String], outputPath: String): Unit = {
@@ -167,7 +183,7 @@ object ProcessManifest {
           "SavedTo" -> new AttributeValueUpdate().withValue(new AttributeValue(Config.fixPrefix(outputPath)))
         ).asJava)
 
-      val _ = dynamodbClient.updateItem(request)
+      val _ = runDynamoDbQuery[UpdateItemResult] { ProcessManifest.dynamodbClient.updateItem(request) }
     }
 
     /** Check if set of run ids contains particular folder */
@@ -184,10 +200,10 @@ object ProcessManifest {
     }
   }
 
-  case class DryRunProcessingManifest(dynamodbClient: AmazonDynamoDB) extends Loader with AwsScan {
+  case object DryRunProcessingManifest extends Loader with AwsScan {
     def markLoaded(tableName: String, runId: String): Unit =
       println(s"Marking runid [$runId] processed (dry run)")
   }
 
-  case class AwsLoaderProcessingManifest(dynamodbClient: AmazonDynamoDB) extends Loader with AwsLoader with AwsScan
+  case object AwsLoaderProcessingManifest extends Loader with AwsLoader with AwsScan
 }
