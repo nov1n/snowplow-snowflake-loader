@@ -1,3 +1,19 @@
+Version 0.4.0 (2018-12-11)
+--------------------------
+Recover DynamoDB on expired token exception (#51)
+Bump geo_region from 2 characters to 3 characters (#58)
+Fix silent skip for folder outside of a stage (#62)
+Add a link to wiki to README (#65)
+Remove VARCHAR-precision when loading from temporary table (#54)
+Update JDBC useragent to self-identify Snowplow (#52)
+Widen sensitive columns in atomic.events to support pseudonymization (#56)
+Add optional host property to configuration (#59)
+Truncate columns on loading (#55)
+Update README markdown in according with CommonMark (#46)
+Add ON_ERROR setting (#43)
+Setup of warehouse should set Auto Suspend to 5 mins and Auto Resume to true (#15)
+Add cross-batch natural deduplication (#33)
+
 Version 0.3.1 (2018-02-02)
 --------------------------
 Remove part-* pattern from Transformer (#44)
