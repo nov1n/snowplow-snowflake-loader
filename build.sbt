@@ -58,7 +58,8 @@ lazy val transformer = project
     libraryDependencies ++= Seq(
       Dependencies.hadoop,
       Dependencies.spark
-    ) ++ commonDependencies
+    ) ++ commonDependencies,
+    unmanagedJars in Compile += file("lib/s3committer-0.5.5.jar")
   )
   .dependsOn(core)
 

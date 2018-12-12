@@ -41,6 +41,8 @@ object Main {
         val config = new SparkConf()
           .setAppName("snowflake-transformer")
           .setIfMissing("spark.master", "local[*]")
+          .set("mapred.output.committer.class", "com.netflix.bdp.s3.S3DirectoryOutputCommitter")
+
         val sc = new SparkContext(config)
 
         // Get run folders that are not in RunManifest in any form
