@@ -12,22 +12,18 @@
  */
 package com.snowplowanalytics.snowflake.transformer
 
-import org.apache.spark.SparkContext
-
-import org.json4s.DefaultFormats
-import org.json4s.jackson.JsonMethods.parse
-
 import com.snowplowanalytics.snowflake.core.ProcessManifest
 import com.snowplowanalytics.snowplow.eventsmanifest.EventsManifest
+import org.apache.spark.sql.{SaveMode, SparkSession}
 
 object TransformerJob {
 
   /** Process all directories, saving state into DynamoDB */
-  def run(sc: SparkContext, manifest: ProcessManifest, tableName: String, jobConfigs: List[TransformerJobConfig], eventsManifest: Option[EventsManifest]): Unit = {
+  def run(spark: SparkSession, manifest: ProcessManifest, tableName: String, jobConfigs: List[TransformerJobConfig], eventsManifest: Option[EventsManifest]): Unit = {
     jobConfigs.foreach { jobConfig =>
       println(s"Snowflake Transformer: processing ${jobConfig.runId}. ${System.currentTimeMillis()}")
       manifest.add(tableName, jobConfig.runId)
-      val shredTypes = process(sc, jobConfig, eventsManifest)
+      val shredTypes = process(spark, jobConfig, eventsManifest)
       manifest.markProcessed(tableName, jobConfig.runId, shredTypes, jobConfig.output)
       println(s"Snowflake Transformer: processed ${jobConfig.runId}. ${System.currentTimeMillis()}")
     }
@@ -42,7 +38,10 @@ object TransformerJob {
    * @param eventsManifest events manifest instance
    * @return list of discovered shredded types
    */
-  def process(sc: SparkContext, jobConfig: TransformerJobConfig, eventsManifest: Option[EventsManifest]) = {
+  def process(spark: SparkSession, jobConfig: TransformerJobConfig, eventsManifest: Option[EventsManifest]) = {
+    import spark.implicits._
+
+    val sc = spark.sparkContext
     val keysAggregator = new StringSetAccumulator
     sc.register(keysAggregator)
 
@@ -56,7 +55,8 @@ object TransformerJob {
       }
     }
 
-    snowflake.saveAsTextFile(jobConfig.output)
+    // DataFrame is used only for S3OutputFormat
+    snowflake.toDF.write.mode(SaveMode.Append).text(jobConfig.output)
 
     val keysFinal = keysAggregator.value.toList
     println(s"Shred types for  ${jobConfig.runId}: " + keysFinal.mkString(", "))
