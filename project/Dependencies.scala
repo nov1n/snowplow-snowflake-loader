@@ -16,9 +16,9 @@ object Dependencies {
 
   object V {
     // Java
-    val hadoop           = "2.7.3"
+    val hadoop           = "2.8.5"
     val snowflakeJdbc    = "3.3.2"
-    val aws              = "1.11.208"
+    val aws              = "1.11.209"
     // Scala
     val spark            = "2.2.0"
     val scopt            = "3.7.0"
@@ -43,6 +43,7 @@ object Dependencies {
 
   // Scala
   val spark            = "org.apache.spark"      %% "spark-core"                   % V.spark          % "provided"
+  val sparkSql         = "org.apache.spark"      %% "spark-sql"                    % V.spark          % "provided"
   val scopt            = "com.github.scopt"      %% "scopt"                        % V.scopt
   val analyticsSdk     = "com.snowplowanalytics" %% "snowplow-scala-analytics-sdk" % V.analyticsSdk
   val json4sJackson    = "org.json4s"            %% "json4s-jackson"               % V.json4sJackson

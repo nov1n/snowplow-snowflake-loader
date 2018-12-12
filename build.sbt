@@ -47,6 +47,7 @@ lazy val loader = project
   )
   .dependsOn(core)
 
+
 lazy val transformer = project
   .settings(moduleName := "snowplow-snowflake-transformer")
   .settings(BuildSettings.assemblySettings)
@@ -57,8 +58,10 @@ lazy val transformer = project
     ),
     libraryDependencies ++= Seq(
       Dependencies.hadoop,
-      Dependencies.spark
-    ) ++ commonDependencies
+      Dependencies.spark,
+      Dependencies.sparkSql
+    ) ++ commonDependencies,
+    unmanagedJars in Compile += file("lib/s3committer-0.5.5.jar")
   )
   .dependsOn(core)
 

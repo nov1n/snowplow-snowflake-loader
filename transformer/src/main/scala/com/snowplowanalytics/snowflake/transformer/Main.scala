@@ -15,6 +15,8 @@ package com.snowplowanalytics.snowflake.transformer
 import org.apache.spark.{SparkConf, SparkContext}
 import com.snowplowanalytics.snowflake.core.{Config, ProcessManifest}
 import com.snowplowanalytics.snowplow.eventsmanifest.EventsManifest
+import org.apache.hadoop.mapred.FileOutputFormat
+import org.apache.spark.sql.SparkSession
 import scalaz.{Failure, Success}
 
 
@@ -41,7 +43,8 @@ object Main {
         val config = new SparkConf()
           .setAppName("snowflake-transformer")
           .setIfMissing("spark.master", "local[*]")
-        val sc = new SparkContext(config)
+
+        val spark = SparkSession.builder().config(config).getOrCreate()
 
         // Get run folders that are not in RunManifest in any form
         val runFolders = manifest.getUnprocessed(appConfig.manifest, appConfig.input)
@@ -49,7 +52,7 @@ object Main {
         runFolders match {
           case Right(folders) =>
             val configs = folders.map(TransformerJobConfig(appConfig.input, appConfig.stageUrl, _))
-            TransformerJob.run(sc, manifest, appConfig.manifest, configs, eventsManifest)
+            TransformerJob.run(spark, manifest, appConfig.manifest, configs, eventsManifest)
           case Left(error) =>
             println("Cannot get list of unprocessed folders")
             println(error)
