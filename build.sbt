@@ -47,6 +47,7 @@ lazy val loader = project
   )
   .dependsOn(core)
 
+
 lazy val transformer = project
   .settings(moduleName := "snowplow-snowflake-transformer")
   .settings(BuildSettings.assemblySettings)
