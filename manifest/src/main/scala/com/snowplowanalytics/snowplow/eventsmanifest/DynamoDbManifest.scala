@@ -33,7 +33,7 @@ import com.amazonaws.services.dynamodbv2.model._
   * @param client AWS DynamoDB client object
   * @param table  AWS DynamoDB table name
   */
-class DynamoDbManifest(client: AmazonDynamoDB, table: String) extends EventsManifest {
+case class DynamoDbManifest(client: AmazonDynamoDB, table: String) extends EventsManifest {
 
   import DynamoDbManifest._
 
