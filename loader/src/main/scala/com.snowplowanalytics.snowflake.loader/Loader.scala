@@ -127,8 +127,7 @@ object Loader {
   def getInsertStatement(config: Config, folder: RunId.ProcessedRunId): Insert = {
     val tableColumns = getColumns(folder.shredTypes)
     val castedColumns = tableColumns.map {
-      // Remove VARCHAR and CHAR precision (#54)
-      case (name, Char(Some(_))) => Select.CastedColumn(Defaults.TempTableColumn, name, Char(None))
+      // Remove VARCHAR precision (#54)
       case (name, Varchar(Some(_))) => Select.CastedColumn(Defaults.TempTableColumn, name, Varchar(None))
       case (name, dataType) => Select.CastedColumn(Defaults.TempTableColumn, name, dataType)
     }
