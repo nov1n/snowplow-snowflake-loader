@@ -14,9 +14,6 @@ package com.snowplowanalytics.snowflake.transformer
 
 import org.apache.spark.{SparkConf, SparkContext}
 import com.snowplowanalytics.snowflake.core.{Config, ProcessManifest}
-import com.snowplowanalytics.snowplow.eventsmanifest.EventsManifest
-import scalaz.{Failure, Success}
-
 
 object Main {
   def main(args: Array[String]): Unit = {
@@ -27,15 +24,6 @@ object Main {
         val s3 = ProcessManifest.getS3(appConfig.awsRegion)
         ProcessManifest.buildDynamoDb(appConfig.awsRegion)
         val manifest = ProcessManifest.AwsProcessingManifest(s3)
-        val eventsManifest = eventsManifestConfig.map {
-          EventsManifest.initStorage(_) match {
-            case Success(storage) => storage
-            case Failure(error) =>
-              println("Cannot init duplicate storage config")
-              println(error)
-              sys.exit(1)
-          }
-        }
 
         // Eager SparkContext initializing to avoid YARN timeout
         val config = new SparkConf()
@@ -51,7 +39,7 @@ object Main {
         runFolders match {
           case Right(folders) =>
             val configs = folders.map(TransformerJobConfig(appConfig.input, appConfig.stageUrl, _))
-            TransformerJob.run(sc, manifest, appConfig.manifest, configs, eventsManifest)
+            TransformerJob.run(sc, manifest, appConfig.manifest, configs, eventsManifestConfig)
           case Left(error) =>
             println("Cannot get list of unprocessed folders")
             println(error)
