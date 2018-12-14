@@ -129,7 +129,7 @@ object Statement {
         case Some(AbortStatement) => s"ABORT_STATEMENT"
         case None => ""
       }
-      val copyOptions = if (onError == "") "COPY_OPTIONS = (TRUNCATECOLUMNS = TRUE)" else s" COPY_OPTIONS = (TRUNCATECOLUMNS = TRUE ON_ERROR = $onError)"
+      val copyOptions = if (onError == "") " TRUNCATECOLUMNS = TRUE" else s" TRUNCATECOLUMNS = TRUE ON_ERROR = $onError"
       val stripNulls = if (ast.stripNullValues) " STRIP_NULL_VALUES = TRUE"
       else ""
       SqlStatement(s"COPY INTO ${ast.schema}.${ast.table}(${ast.columns.mkString(",")}) FROM @${ast.from.schema}.${ast.from.stageName}/${ast.from.path}$credentials$copyOptions FILE_FORMAT = (FORMAT_NAME = '${ast.fileFormat.schema}.${ast.fileFormat.formatName}'$stripNulls)" )
