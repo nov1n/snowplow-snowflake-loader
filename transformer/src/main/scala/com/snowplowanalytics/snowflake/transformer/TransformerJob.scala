@@ -12,18 +12,19 @@
  */
 package com.snowplowanalytics.snowflake.transformer
 
-import com.snowplowanalytics.snowflake.core.ProcessManifest
-import com.snowplowanalytics.snowplow.eventsmanifest.EventsManifest
 import org.apache.spark.sql.{SaveMode, SparkSession}
+
+import com.snowplowanalytics.snowflake.core.ProcessManifest
+import com.snowplowanalytics.snowplow.eventsmanifest.EventsManifest.EventsManifestConfig
 
 object TransformerJob {
 
   /** Process all directories, saving state into DynamoDB */
-  def run(spark: SparkSession, manifest: ProcessManifest, tableName: String, jobConfigs: List[TransformerJobConfig], eventsManifest: Option[EventsManifest]): Unit = {
+  def run(spark: SparkSession, manifest: ProcessManifest, tableName: String, jobConfigs: List[TransformerJobConfig], eventsManifestConfig: Option[EventsManifestConfig]): Unit = {
     jobConfigs.foreach { jobConfig =>
       println(s"Snowflake Transformer: processing ${jobConfig.runId}. ${System.currentTimeMillis()}")
       manifest.add(tableName, jobConfig.runId)
-      val shredTypes = process(spark, jobConfig, eventsManifest)
+      val shredTypes = process(spark, jobConfig, eventsManifestConfig)
       manifest.markProcessed(tableName, jobConfig.runId, shredTypes, jobConfig.output)
       println(s"Snowflake Transformer: processed ${jobConfig.runId}. ${System.currentTimeMillis()}")
     }
@@ -33,12 +34,12 @@ object TransformerJob {
    * Transform particular folder to Snowflake-compatible format and
    * return list of discovered shredded types
    *
-   * @param sc existing spark context
+   * @param spark Spark SQL session
    * @param jobConfig configuration with paths
-   * @param eventsManifest events manifest instance
+   * @param eventsManifestConfig events manifest config instance
    * @return list of discovered shredded types
    */
-  def process(spark: SparkSession, jobConfig: TransformerJobConfig, eventsManifest: Option[EventsManifest]) = {
+  def process(spark: SparkSession, jobConfig: TransformerJobConfig, eventsManifestConfig: Option[EventsManifestConfig]) = {
     import spark.implicits._
 
     val sc = spark.sparkContext
@@ -48,10 +49,11 @@ object TransformerJob {
     val events = sc.textFile(jobConfig.input)
 
     val snowflake = events.flatMap { event =>
-      Transformer.transform(event, eventsManifest) match {
+      Transformer.transform(event, eventsManifestConfig) match {
         case Some((keys, transformed)) =>
           keysAggregator.add(keys)
           Some(transformed)
+        case None => None
       }
     }
 
