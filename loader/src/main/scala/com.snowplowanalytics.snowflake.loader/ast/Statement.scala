@@ -95,6 +95,8 @@ object Statement {
         SqlStatement(s"ALTER TABLE $schema.$table ADD COLUMN $column ${datatype.show}")
       case AlterTable.DropColumn(schema, table, column) =>
         SqlStatement(s"ALTER TABLE $schema.$table DROP COLUMN $column")
+      case AlterTable.AlterColumnDatatype(schema, table, column, datatype) =>
+        SqlStatement(s"ALTER TABLE $schema.$table ALTER COLUMN $column SET DATA TYPE ${datatype.show}")
     }
   }
 
