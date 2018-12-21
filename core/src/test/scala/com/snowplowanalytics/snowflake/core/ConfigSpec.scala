@@ -74,6 +74,7 @@ class ConfigSpec extends Specification {
         schema = "atomic",
         maxError = None,
         jdbcHost = None),
+      "",
       false)
 
     Config.parseLoaderCli(args) must beSome(Right(expected))
@@ -108,6 +109,7 @@ class ConfigSpec extends Specification {
         database = "test_db",
         maxError = None,
         jdbcHost = None),
+      "",
       true)
 
     Config.parseLoaderCli(args) must beSome(Right(expected))
@@ -144,6 +146,7 @@ class ConfigSpec extends Specification {
         database = "test_db",
         maxError = None,
         jdbcHost = None),
+      "",
       true)
 
     Config.parseLoaderCli(args) must beSome(Right(expected))
@@ -195,6 +198,7 @@ class ConfigSpec extends Specification {
         database = "test_db",
         maxError = None,
         jdbcHost = None),
+      "",
       false)
 
     Config.parseLoaderCli(args) must beSome(Right(expected))
@@ -231,6 +235,7 @@ class ConfigSpec extends Specification {
         database = "test_db",
         maxError = None,
         jdbcHost = None),
+      "",
       true)
 
     Config.parseLoaderCli(args) must beSome(Right(expected))
@@ -264,6 +269,7 @@ class ConfigSpec extends Specification {
         database = "test_db",
         maxError = None,
         jdbcHost = None),
+      "",
       true)
 
     Config.parseLoaderCli(args) must beSome(Right(expected))
@@ -340,6 +346,7 @@ class ConfigSpec extends Specification {
         database = "test_db",
         maxError = Some(10000),
         jdbcHost = Some("snowplow.us-west-1.azure.snowflakecomputing.com")),
+      "",
       true)
 
     Config.parseLoaderCli(args) must beSome(Right(expected))

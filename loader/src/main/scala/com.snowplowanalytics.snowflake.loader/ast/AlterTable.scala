@@ -20,4 +20,5 @@ sealed trait AlterTable {
 object AlterTable {
   case class DropColumn(schema: String, table: String, column: String) extends AlterTable
   case class AddColumn(schema: String, table: String, column: String, datatype: SnowflakeDatatype) extends AlterTable
+  case class AlterColumnDatatype(schema: String, table: String, column: String, datatype: SnowflakeDatatype) extends AlterTable
 }
