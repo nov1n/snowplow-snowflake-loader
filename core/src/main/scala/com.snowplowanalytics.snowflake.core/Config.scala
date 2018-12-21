@@ -54,9 +54,10 @@ object Config {
   sealed trait Command
   case object LoadCommand extends Command
   case object SetupCommand extends Command
+  case object MigrateCommand extends Command
 
-  case class RawCliLoader(command: String, loaderConfig: String, resolver: String, dryRun: Boolean, base64: Boolean)
-  case class CliLoaderConfiguration(command: Command, loaderConfig: Config, dryRun: Boolean)
+  case class RawCliLoader(command: String, loaderConfig: String, resolver: String, loaderVersion: String, dryRun: Boolean, base64: Boolean)
+  case class CliLoaderConfiguration(command: Command, loaderConfig: Config, loaderVersion: String, dryRun: Boolean)
 
   case class RawCliTransformer(loaderConfig: String, resolver: String, eventsManifestConfig: Option[String])
   case class CliTransformerConfiguration(loaderConfig: Config, eventsManifestConfig: Option[DynamoDbConfig])
@@ -136,7 +137,7 @@ object Config {
       json <- parseJsonFile(rawConfig.loaderConfig, rawConfig.base64)
       validConfig <- validate(json, true)(resolver).toEither.leftMap { x => s"Validation error: ${x.list.mkString(", ")}" }
       config <- extract(validConfig)
-    } yield CliLoaderConfiguration(command, config, rawConfig.dryRun)
+    } yield CliLoaderConfiguration(command, config, rawConfig.loaderVersion, rawConfig.dryRun)
   }
 
   /** Validate raw transformer's CLI configuration  */
@@ -158,13 +159,23 @@ object Config {
 
 
   /** Starting raw value, required by `parser` */
-  private val rawCliLoader = RawCliLoader("noop", "", "", false, false)
+  private val rawCliLoader = RawCliLoader("noop", "", "", "", false, false)
   private val loaderCliParser = new scopt.OptionParser[RawCliLoader](ProjectMetadata.name + "-" + ProjectMetadata.version + ".jar") {
     head(ProjectMetadata.name, ProjectMetadata.version)
 
     cmd("setup")
       .action((_, c) => c.copy(command = "setup"))
       .text("Perform initialization instead of loading")
+
+    cmd("migrate")
+      .action((_, c) => c.copy(command = "migrate"))
+      .text("Perform Snowflake migration instead of loading")
+      .children(
+        opt[String]("loader-version")
+          .required()
+          .action((x, c) => c.copy(loaderVersion = x))
+          .text("Snowplow Snowflake Loader version to make the table compatible with")
+      )
 
     cmd("load")
       .action((_, c) => c.copy(command = "load"))
@@ -249,8 +260,9 @@ object Config {
 
   private def getSubcommand(subcommand: String): Either[String, Command] = subcommand match {
     case "setup" => Right(SetupCommand)
+    case "migrate" => Right(MigrateCommand)
     case "load" => Right(LoadCommand)
-    case "noop" => Left(s"Either setup or load actions must be provided")
+    case "noop" => Left(s"Either setup, migrate or load actions must be provided")
     case command => Left(s"Unknown action $command")
   }
 
