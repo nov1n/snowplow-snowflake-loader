@@ -14,7 +14,7 @@ package com.snowplowanalytics.snowflake.transformer
 
 import com.snowplowanalytics.snowflake.transformer.singleton.EventsManifestSingleton
 import org.json4s.DefaultFormats
-import org.json4s.jackson.JsonMethods._
+import org.json4s.JsonAST.JValue
 import com.snowplowanalytics.snowplow.analytics.scalasdk.json.{Data, EventTransformer}
 import com.snowplowanalytics.snowplow.eventsmanifest.EventsManifest.EventsManifestConfig
 
@@ -26,9 +26,9 @@ object Transformer {
     * Transform TSV to pair of shredded keys and enriched event in JSON format
     * @param line enriched event TSV
     * @param eventsManifestConfig events manifest config instance
-    * @return pair of set with column names and JSON string, ready to be saved
+    * @return pair of set with column names and JValue
     */
-  def transform(line: String, eventsManifestConfig: Option[EventsManifestConfig]): Option[(Set[String], String)] = {
+  def transform(line: String, eventsManifestConfig: Option[EventsManifestConfig]): Option[(Set[String], JValue)] = {
     EventTransformer.jsonifyGoodEvent(line.split("\t", -1)) match {
       case Right((inventory, json)) =>
         val shredTypes = inventory.map(item => Data.fixSchema(item.shredProperty, item.igluUri))
@@ -36,9 +36,9 @@ object Transformer {
           case Some(manifest) =>
             val etlTstamp = (json \ "etl_tstamp").extract[String].replace("T", " ").replace("Z","")
             if (manifest.put((json \ "event_id").extract[String], (json \ "event_fingerprint").extract[String], etlTstamp)) {
-              Some(shredTypes, compact(json))
+              Some(shredTypes, json)
             } else None
-          case None => Some(shredTypes, compact(json))
+          case None => Some(shredTypes, json)
         }
       case Left(e) =>
         throw new RuntimeException(e.mkString("\n"))
