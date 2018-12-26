@@ -20,7 +20,7 @@ import org.apache.spark.sql.SparkSession
 object Main {
   def main(args: Array[String]): Unit = {
     Config.parseTransformerCli(args) match {
-      case Some(Right(Config.CliTransformerConfiguration(appConfig, eventsManifestConfig))) =>
+      case Some(Right(Config.CliTransformerConfiguration(appConfig, eventsManifestConfig, inbatch))) =>
 
         // Always use EMR Role role for manifest-access
         val s3 = ProcessManifest.getS3(appConfig.awsRegion)
@@ -40,7 +40,7 @@ object Main {
         runFolders match {
           case Right(folders) =>
             val configs = folders.map(TransformerJobConfig(appConfig.input, appConfig.stageUrl, _))
-            TransformerJob.run(spark, manifest, appConfig.manifest, configs, eventsManifestConfig)
+            TransformerJob.run(spark, manifest, appConfig.manifest, configs, eventsManifestConfig, inbatch)
           case Left(error) =>
             println("Cannot get list of unprocessed folders")
             println(error)

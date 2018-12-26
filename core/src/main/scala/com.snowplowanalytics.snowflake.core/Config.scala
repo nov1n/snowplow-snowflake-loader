@@ -59,8 +59,8 @@ object Config {
   case class RawCliLoader(command: String, loaderConfig: String, resolver: String, loaderVersion: String, dryRun: Boolean, base64: Boolean)
   case class CliLoaderConfiguration(command: Command, loaderConfig: Config, loaderVersion: String, dryRun: Boolean)
 
-  case class RawCliTransformer(loaderConfig: String, resolver: String, eventsManifestConfig: Option[String])
-  case class CliTransformerConfiguration(loaderConfig: Config, eventsManifestConfig: Option[DynamoDbConfig])
+  case class RawCliTransformer(loaderConfig: String, resolver: String, eventsManifestConfig: Option[String], inbatch: Boolean)
+  case class CliTransformerConfiguration(loaderConfig: Config, eventsManifestConfig: Option[DynamoDbConfig], inbatch: Boolean)
 
   /** Available methods to authenticate Snowflake loading */
   sealed trait AuthMethod
@@ -154,7 +154,7 @@ object Config {
           .map { x => Some(x) }
         case None => Right(None)
       }
-    } yield CliTransformerConfiguration(config, eventsManifestConfig)
+    } yield CliTransformerConfiguration(config, eventsManifestConfig, rawConfig.inbatch)
   }
 
 
@@ -205,7 +205,7 @@ object Config {
     help("help").text("prints this usage text")
   }
 
-  private val rawCliTransformer = RawCliTransformer("", "", None)
+  private val rawCliTransformer = RawCliTransformer("", "", None, false)
   private val transformerCliParser = new scopt.OptionParser[RawCliTransformer](ProjectMetadata.name + "-" + ProjectMetadata.version + ".jar") {
     head(ProjectMetadata.name, ProjectMetadata.version)
 
@@ -226,6 +226,10 @@ object Config {
       .valueName("eventsManifest.json")
       .action((x, c) => c.copy(eventsManifestConfig = Some(x)))
       .text("Base64-encoded Events Manifest configuration JSON")
+
+    opt[Unit]("inbatch-deduplication")
+      .action((_, c) => c.copy(inbatch = true))
+      .text("Whether inbatch deduplication should be used")
 
     help("help").text("prints this usage text")
   }
