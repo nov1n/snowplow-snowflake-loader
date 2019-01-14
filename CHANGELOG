@@ -1,3 +1,23 @@
+Version 0.4.0 (2019-01-16)
+--------------------------
+Add in-batch natural deduplication (#48)
+Add table migration command (#68)
+Add a link to wiki to README (#65)
+Add optional host property to configuration (#59)
+Add ON_ERROR setting (#43)
+Add cross-batch natural deduplication (#33)
+Bump Snowflake JDBC driver to 3.6.22 (#69)
+Recover DynamoDB on expired token exception (#51)
+Fix silent skip for folder outside of a stage (#62)
+Remove VARCHAR-precision when loading from temporary table (#54)
+Update JDBC useragent to self-identify Snowplow (#52)
+Truncate columns on loading (#55)
+Update README markdown in according with CommonMark (#46)
+Setup of warehouse should set Auto Suspend to 5 mins and Auto Resume to true (#15)
+Use s3committer in Transformer (#67)
+Widen geo_region to 3 characters (#58)
+Widen sensitive columns in atomic.events to support pseudonymization (#56)
+
 Version 0.3.1 (2018-02-02)
 --------------------------
 Remove part-* pattern from Transformer (#44)
