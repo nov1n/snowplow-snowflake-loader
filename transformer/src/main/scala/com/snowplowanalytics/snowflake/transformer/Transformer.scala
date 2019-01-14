@@ -31,7 +31,7 @@ object Transformer {
     * @param inventory            TSV inventory items
     * @param json                 TSV json object
     * @param eventsManifestConfig events manifest config instance
-    * @return pair of set with column names and JSON string, ready to be saved
+    * @return pair of set with column names and JValue
     */
   def transform(inventory: Set[InventoryItem], json: JObject, eventsManifestConfig: Option[EventsManifestConfig]): Option[(Set[String], String)] = {
     val shredTypes = inventory.map(item => Data.fixSchema(item.shredProperty, item.igluUri))

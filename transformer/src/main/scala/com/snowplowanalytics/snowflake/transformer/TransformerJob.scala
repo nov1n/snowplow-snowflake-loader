@@ -14,17 +14,21 @@ package com.snowplowanalytics.snowflake.transformer
 
 import org.apache.spark.sql.{SaveMode, SparkSession}
 
+import org.json4s.DefaultFormats
+
 import com.snowplowanalytics.snowflake.core.ProcessManifest
 import com.snowplowanalytics.snowplow.eventsmanifest.EventsManifest.EventsManifestConfig
 
 object TransformerJob {
 
+  implicit val formats = DefaultFormats
+
   /** Process all directories, saving state into DynamoDB */
-  def run(spark: SparkSession, manifest: ProcessManifest, tableName: String, jobConfigs: List[TransformerJobConfig], eventsManifestConfig: Option[EventsManifestConfig]): Unit = {
+  def run(spark: SparkSession, manifest: ProcessManifest, tableName: String, jobConfigs: List[TransformerJobConfig], eventsManifestConfig: Option[EventsManifestConfig], inbatch: Boolean): Unit = {
     jobConfigs.foreach { jobConfig =>
       println(s"Snowflake Transformer: processing ${jobConfig.runId}. ${System.currentTimeMillis()}")
       manifest.add(tableName, jobConfig.runId)
-      val shredTypes = process(spark, jobConfig, eventsManifestConfig)
+      val shredTypes = process(spark, jobConfig, eventsManifestConfig, inbatch)
       manifest.markProcessed(tableName, jobConfig.runId, shredTypes, jobConfig.output)
       println(s"Snowflake Transformer: processed ${jobConfig.runId}. ${System.currentTimeMillis()}")
     }
@@ -37,27 +41,32 @@ object TransformerJob {
     * @param spark                Spark SQL session
     * @param jobConfig            configuration with paths
     * @param eventsManifestConfig events manifest config instance
+    * @param inbatch              whether inbatch deduplication should be used
     * @return list of discovered shredded types
     */
-  def process(spark: SparkSession, jobConfig: TransformerJobConfig, eventsManifestConfig: Option[EventsManifestConfig]) = {
+  def process(spark: SparkSession, jobConfig: TransformerJobConfig, eventsManifestConfig: Option[EventsManifestConfig], inbatch: Boolean) = {
     import spark.implicits._
 
     val sc = spark.sparkContext
     val keysAggregator = new StringSetAccumulator
     sc.register(keysAggregator)
 
-    val events = sc.textFile(jobConfig.input)
-
-    val snowflake = events
-      .map { event => Transformer.jsonify(event) }
-      .flatMap { jsonifiedEvent =>
-        Transformer.transform(jsonifiedEvent._1, jsonifiedEvent._2, eventsManifestConfig) match {
-          case Some((keys, transformed)) =>
-            keysAggregator.add(keys)
-            Some(transformed)
-          case None => None
-        }
+    val events = sc
+      .textFile(jobConfig.input)
+      .map { e => Transformer.jsonify(e) }
+    val dedupedEvents = if (inbatch) {
+      events
+        .groupBy { j => ((j._2 \ "event_id").extract[String], (j._2 \ "event_fingerprint").extract[String]) }
+        .flatMap { case (_, vs) => vs.take(1) }
+    } else events
+    val snowflake = dedupedEvents.flatMap { j =>
+      Transformer.transform(j._1, j._2, eventsManifestConfig) match {
+        case Some((keys, transformed)) =>
+          keysAggregator.add(keys)
+          Some(transformed)
+        case None => None
       }
+    }
 
     // DataFrame is used only for S3OutputFormat
     snowflake.toDF.write.mode(SaveMode.Append).text(jobConfig.output)
