@@ -14,14 +14,10 @@ package com.snowplowanalytics.snowflake.transformer
 
 import org.apache.spark.sql.{SaveMode, SparkSession}
 
-import org.json4s.DefaultFormats
-
 import com.snowplowanalytics.snowflake.core.ProcessManifest
 import com.snowplowanalytics.snowplow.eventsmanifest.EventsManifest.EventsManifestConfig
 
 object TransformerJob {
-
-  implicit val formats = DefaultFormats
 
   /** Process all directories, saving state into DynamoDB */
   def run(spark: SparkSession, manifest: ProcessManifest, tableName: String, jobConfigs: List[TransformerJobConfig], eventsManifestConfig: Option[EventsManifestConfig], inbatch: Boolean): Unit = {
@@ -56,11 +52,11 @@ object TransformerJob {
       .map { e => Transformer.jsonify(e) }
     val dedupedEvents = if (inbatch) {
       events
-        .groupBy { j => ((j._2 \ "event_id").extract[String], (j._2 \ "event_fingerprint").extract[String]) }
+        .groupBy { e => (e.event_id, e.event_fingerprint) }
         .flatMap { case (_, vs) => vs.take(1) }
     } else events
-    val snowflake = dedupedEvents.flatMap { j =>
-      Transformer.transform(j._1, j._2, eventsManifestConfig) match {
+    val snowflake = dedupedEvents.flatMap { e =>
+      Transformer.transform(e, eventsManifestConfig) match {
         case Some((keys, transformed)) =>
           keysAggregator.add(keys)
           Some(transformed)
