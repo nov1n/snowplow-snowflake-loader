@@ -12,39 +12,45 @@
  */
 package com.snowplowanalytics.snowflake.transformer
 
-import org.json4s.{DefaultFormats, JObject}
-import org.json4s.jackson.JsonMethods._
+// java
+import java.util.UUID
 
-import com.snowplowanalytics.snowplow.analytics.scalasdk.json.Data.InventoryItem
-import com.snowplowanalytics.snowplow.analytics.scalasdk.json.{Data, EventTransformer}
+// cats
+import cats.data.Validated.{Invalid, Valid}
 
+// scala-analytics-sdk
+import com.snowplowanalytics.snowplow.analytics.scalasdk.Event
+import com.snowplowanalytics.snowplow.analytics.scalasdk.SnowplowEvent
+
+// events-manifest
+import com.snowplowanalytics.snowplow.eventsmanifest.EventsManifest
 import com.snowplowanalytics.snowplow.eventsmanifest.EventsManifest.EventsManifestConfig
+
+// This library
 import com.snowplowanalytics.snowflake.transformer.singleton.EventsManifestSingleton
 
 object Transformer {
 
-  implicit val formats = DefaultFormats
-
   /**
     * Transform jsonified TSV to pair of shredded keys and enriched event in JSON format
     *
-    * @param inventory            TSV inventory items
-    * @param json                 TSV json object
+    * @param event                Event case class instance
     * @param eventsManifestConfig events manifest config instance
     * @return pair of set with column names and JValue
     */
-  def transform(inventory: Set[InventoryItem], json: JObject, eventsManifestConfig: Option[EventsManifestConfig]): Option[(Set[String], String)] = {
-    val shredTypes = inventory.map(item => Data.fixSchema(item.shredProperty, item.igluUri))
-    val eventId = (json \ "event_id").extract[String]
-    val eventFingerprint = (json \ "event_fingerprint").extract[String]
-    val etlTstamp = (json \ "etl_tstamp").extract[String].replace("T", " ").replace("Z", "")
+  def transform(event: Event, eventsManifestConfig: Option[EventsManifestConfig]): Option[(Set[String], String)] = {
+    val shredTypes = event.inventory.map(item => SnowplowEvent.transformSchema(item.shredProperty, item.schemaKey))
+    val eventId = event.event_id.toString
+    val eventFingerprint = event.event_fingerprint.getOrElse(UUID.randomUUID().toString)
+    val etlTstamp = event.etl_tstamp.map(i => EventsManifest.RedshiftTstampFormatter.format(i))
+      .getOrElse(throw new RuntimeException(s"etl_tstamp in event $eventId is empty or missing"))
 
     EventsManifestSingleton.get(eventsManifestConfig) match {
       case Some(manifest) =>
         if (manifest.put(eventId, eventFingerprint, etlTstamp)) {
-          Some((shredTypes, compact(json)))
+          Some((shredTypes, event.toJson(true).noSpaces))
         } else None
-      case None => Some((shredTypes, compact(json)))
+      case None => Some((shredTypes, event.toJson(true).noSpaces))
     }
   }
 
@@ -52,13 +58,13 @@ object Transformer {
     * Transform TSV to pair of inventory items and JSON object
     *
     * @param line enriched event TSV
-    * @return pair of inventory items and JSON object
+    * @return Event case class instance
     */
-  def jsonify(line: String): (Set[InventoryItem], JObject) = {
-    EventTransformer.jsonifyGoodEvent(line.split("\t", -1)) match {
-      case Right((inventory, json)) => (inventory, json)
-      case Left(e) =>
-        throw new RuntimeException(e.mkString("\n"))
+  def jsonify(line: String): Event = {
+    Event.parse(line) match {
+      case Valid(event) => event
+      case Invalid(e) =>
+        throw new RuntimeException(e.toList.mkString("\n"))
     }
   }
 }

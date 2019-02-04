@@ -48,7 +48,7 @@ object Loader {
       s"Warehouse $warehouseName does not exist".invalidNel
     else ().validNel
 
-    (schema, stage, stageUrlMatch, table, fileFormat, warehouse).map6 { (_: Unit, _: Unit, _: Unit, _: Unit, _: Unit, _: Unit) => () }
+    (schema, stage, stageUrlMatch, table, fileFormat, warehouse).mapN { (_: Unit, _: Unit, _: Unit, _: Unit, _: Unit, _: Unit) => () }
   }
 
   def exec[C](db: Connection[C], connection: C, manifest: ProcessManifest.Loader, config: Config): Unit = {
