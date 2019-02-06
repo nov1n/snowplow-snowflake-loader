@@ -13,9 +13,7 @@
 package com.snowplowanalytics.snowflake.transformer
 
 import org.apache.spark.sql.{SaveMode, SparkSession}
-
 import org.json4s.DefaultFormats
-
 import com.snowplowanalytics.snowflake.core.ProcessManifest
 import com.snowplowanalytics.snowplow.eventsmanifest.EventsManifest.EventsManifestConfig
 
@@ -52,13 +50,31 @@ object TransformerJob {
     sc.register(keysAggregator)
 
     val events = sc
-      .textFile(jobConfig.input)
-      .map { e => Transformer.jsonify(e) }
+      .wholeTextFiles(jobConfig.input)
+      .flatMap(rdd => {
+        val fileName = rdd._1
+        val fileContents = rdd._2
+        fileContents.lines.zipWithIndex.map{case (event, index) =>
+          val lineNumber = index + 1
+          try {
+            Right(Transformer.jsonify(event))
+          } catch {
+            case ex : Throwable =>
+              println(s"Error: Could not parse event on line $lineNumber in file $fileName\nReason: ${ex.getMessage}\nLine: $event")
+              Left(event)
+          }
+        }
+      })
+
+    val goodEvents = events.collect({case Right(x) => x})
+    val badEvents = events.collect({case Left(x) => x})
+
     val dedupedEvents = if (inbatch) {
-      events
+      goodEvents
         .groupBy { j => ((j._2 \ "event_id").extract[String], (j._2 \ "event_fingerprint").extract[String]) }
         .flatMap { case (_, vs) => vs.take(1) }
-    } else events
+    } else goodEvents
+
     val snowflake = dedupedEvents.flatMap { j =>
       Transformer.transform(j._1, j._2, eventsManifestConfig) match {
         case Some((keys, transformed)) =>
@@ -70,6 +86,7 @@ object TransformerJob {
 
     // DataFrame is used only for S3OutputFormat
     snowflake.toDF.write.mode(SaveMode.Append).text(jobConfig.output)
+    badEvents.toDF.write.mode(SaveMode.Append).text(jobConfig.badOutput)
 
     val keysFinal = keysAggregator.value.toList
     println(s"Shred types for  ${jobConfig.runId}: " + keysFinal.mkString(", "))

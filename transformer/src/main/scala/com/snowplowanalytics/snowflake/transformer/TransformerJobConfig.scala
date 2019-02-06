@@ -25,6 +25,13 @@ case class TransformerJobConfig(enrichedArchive: S3Folder, snowflakeOutput: S3Fo
     s"s3a://$bucket/$path$runIdFolder"
   }
 
+  def badOutput: String = {
+    val (bucket, path) = snowflakeOutput.splitS3Folder
+    s"s3a://$bucket/$path$runIdFolder$bad"
+  }
+
   def runIdFolder: String = runId.split("/").last
+
+  def bad: String = "_BAD"
 }
 
