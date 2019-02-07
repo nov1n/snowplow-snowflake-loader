@@ -16,10 +16,12 @@ import org.apache.spark.sql.{SaveMode, SparkSession}
 import org.json4s.DefaultFormats
 import com.snowplowanalytics.snowflake.core.ProcessManifest
 import com.snowplowanalytics.snowplow.eventsmanifest.EventsManifest.EventsManifestConfig
+import org.apache.log4j.LogManager
 
 object TransformerJob {
 
   implicit val formats = DefaultFormats
+  val log = LogManager.getLogger(TransformerJob.getClass.getName)
 
   /** Process all directories, saving state into DynamoDB */
   def run(spark: SparkSession, manifest: ProcessManifest, tableName: String, jobConfigs: List[TransformerJobConfig], eventsManifestConfig: Option[EventsManifestConfig], inbatch: Boolean): Unit = {
@@ -60,14 +62,16 @@ object TransformerJob {
             Right(Transformer.jsonify(event))
           } catch {
             case ex : Throwable =>
-              println(s"Error: Could not parse event on line $lineNumber in file $fileName\nReason: ${ex.getMessage}\nLine: $event")
+              log.error(s"Could not parse event on line $lineNumber in file $fileName")
+              log.error(s"${ex.getMessage}")
+              log.error(s"$event")
               Left(event)
           }
         }
       })
 
     val goodEvents = events.collect({case Right(x) => x})
-    val badEvents = events.collect({case Left(x) => x})
+    val errorEvents = events.collect({case Left(x) => x})
 
     val dedupedEvents = if (inbatch) {
       goodEvents
@@ -86,7 +90,15 @@ object TransformerJob {
 
     // DataFrame is used only for S3OutputFormat
     snowflake.toDF.write.mode(SaveMode.Append).text(jobConfig.output)
-    badEvents.toDF.write.mode(SaveMode.Append).text(jobConfig.badOutput)
+
+    // Write out errorEvents if an errorOutput location is defined
+    jobConfig.errorOutput match {
+      case Some(path) if !errorEvents.isEmpty() =>
+        errorEvents.toDF.write.mode(SaveMode.Append).text(path)
+        log.info(s"Writing error events to $path.")
+      case Some(_) => log.info(s"No error events for ${jobConfig.output}.")
+      case None => log.info(s"Discarding error events for ${jobConfig.output}.")
+    }
 
     val keysFinal = keysAggregator.value.toList
     println(s"Shred types for  ${jobConfig.runId}: " + keysFinal.mkString(", "))

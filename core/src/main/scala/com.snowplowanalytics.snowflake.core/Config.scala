@@ -45,6 +45,7 @@ case class Config(
   warehouse: String,
   database: String,
   schema: String,
+  errorEventsUrl: Option[Config.S3Folder],
   maxError: Option[Int],
   jdbcHost: Option[String]
 )
@@ -119,7 +120,7 @@ object Config {
 
   }))
 
-  implicit val formats = org.json4s.DefaultFormats + s3FolderSerializer + PasswordSerializer + AuthSerializer
+  implicit val formats = org.json4s.DefaultFormats + s3FolderSerializer + PasswordSerializer + AuthSerializer + optionalS3FolderSerializer
 
   /** Parse and validate Snowflake Loader configuration out of CLI args */
   def parseLoaderCli(args: Array[String]): Option[Either[String, CliLoaderConfiguration]] =
@@ -313,6 +314,21 @@ object Config {
       {
         case JString(s) => S3Folder.parse(s) match {
           case Right(folder) => folder
+          case Left(error) => throw new MappingException(error)
+        }
+      },
+
+      {
+        case a: S3Folder => JString(a.path)
+      }
+    )
+  )
+
+  object optionalS3FolderSerializer extends CustomSerializer[Option[S3Folder]]((formats) =>
+    (
+      {
+        case JString(s) => S3Folder.parse(s) match {
+          case Right(folder) => Some(folder)
           case Left(error) => throw new MappingException(error)
         }
       },

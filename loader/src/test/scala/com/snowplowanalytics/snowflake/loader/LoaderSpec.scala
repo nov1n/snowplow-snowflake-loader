@@ -79,6 +79,7 @@ class LoaderSpec extends Specification { def is = s2"""
       warehouse = "snowplow_wa",
       database = "database",
       schema = "not_an_atomic",
+      errorEventsUrl = None,
       maxError = None,
       jdbcHost = None)
 
@@ -141,6 +142,7 @@ class LoaderSpec extends Specification { def is = s2"""
       "wh",
       "db",
       "atomic",
+      None,
       None,
       None)
     Loader.exec(LoaderSpec.Mock, connection, new loader.LoaderSpec.ProcessingManifestTest, config)

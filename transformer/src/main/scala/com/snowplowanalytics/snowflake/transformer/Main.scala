@@ -39,7 +39,7 @@ object Main {
 
         runFolders match {
           case Right(folders) =>
-            val configs = folders.map(TransformerJobConfig(appConfig.input, appConfig.stageUrl, _))
+            val configs = folders.map(TransformerJobConfig(appConfig.input, appConfig.stageUrl, appConfig.errorEventsUrl, _))
             TransformerJob.run(spark, manifest, appConfig.manifest, configs, eventsManifestConfig, inbatch)
           case Left(error) =>
             println("Cannot get list of unprocessed folders")

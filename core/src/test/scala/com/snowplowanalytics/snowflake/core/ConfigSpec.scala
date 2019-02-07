@@ -31,6 +31,7 @@ class ConfigSpec extends Specification {
   Parse valid load without credentials $e9
   Parse valid base64-encoded events manifest configuration $e10
   Parse valid configuration with optional params $e11
+  Parse valid configuration with optional errorEventsUrl $e12
   """
 
   val configUrl = getClass.getResource("/valid-config.json")
@@ -72,6 +73,7 @@ class ConfigSpec extends Specification {
         warehouse = "snowplow_wh",
         database = "test_db",
         schema = "atomic",
+        errorEventsUrl = None,
         maxError = None,
         jdbcHost = None),
       "",
@@ -107,6 +109,7 @@ class ConfigSpec extends Specification {
         account = "snowplow",
         warehouse = "snowplow_wh",
         database = "test_db",
+        errorEventsUrl = None,
         maxError = None,
         jdbcHost = None),
       "",
@@ -144,6 +147,7 @@ class ConfigSpec extends Specification {
         account = "snowplow",
         warehouse = "snowplow_wh",
         database = "test_db",
+        errorEventsUrl = None,
         maxError = None,
         jdbcHost = None),
       "",
@@ -196,6 +200,7 @@ class ConfigSpec extends Specification {
         account = "snowplow",
         warehouse = "snowplow_wh",
         database = "test_db",
+        errorEventsUrl = None,
         maxError = None,
         jdbcHost = None),
       "",
@@ -233,6 +238,7 @@ class ConfigSpec extends Specification {
         account = "snowplow",
         warehouse = "snowplow_wh",
         database = "test_db",
+        errorEventsUrl = None,
         maxError = None,
         jdbcHost = None),
       "",
@@ -267,6 +273,7 @@ class ConfigSpec extends Specification {
         account = "snowplow",
         warehouse = "snowplow_wh",
         database = "test_db",
+        errorEventsUrl = None,
         maxError = None,
         jdbcHost = None),
       "",
@@ -300,6 +307,7 @@ class ConfigSpec extends Specification {
         account = "snowplow",
         warehouse = "snowplow_wh",
         database = "test_db",
+        errorEventsUrl = None,
         maxError = None,
         jdbcHost = None),
       Some(DynamoDbConfig(
@@ -346,6 +354,46 @@ class ConfigSpec extends Specification {
         account = "snowplow",
         warehouse = "snowplow_wh",
         database = "test_db",
+        errorEventsUrl = None,
+        maxError = Some(10000),
+        jdbcHost = Some("snowplow.us-west-1.azure.snowflakecomputing.com")),
+      "",
+      true)
+
+    Config.parseLoaderCli(args) must beSome(Right(expected))
+  }
+
+
+  def e12 = {
+    val args = List(
+      "load",
+
+      "--dry-run",
+      "--resolver", resolverBase64,
+      "--config", "ewogICJzY2hlbWEiOiAiaWdsdTpjb20uc25vd3Bsb3dhbmFseXRpY3Muc25vd3Bsb3cuc3RvcmFnZS9zbm93Zmxha2VfY29uZmlnL2pzb25zY2hlbWEvMS0wLTEiLAogICJkYXRhIjogewogICAgIm5hbWUiOiAiU25vd2ZsYWtlIiwKICAgICJhdXRoIjogewogICAgICAiYWNjZXNzS2V5SWQiOiAiQUJDRCIsCiAgICAgICJzZWNyZXRBY2Nlc3NLZXkiOiAiYWJjZCIKICAgIH0sCiAgICAiYXdzUmVnaW9uIjogInVzLWVhc3QtMSIsCiAgICAibWFuaWZlc3QiOiAic25vd2ZsYWtlLW1hbmlmZXN0IiwKICAgICJzbm93Zmxha2VSZWdpb24iOiAidXMtd2VzdC0xIiwKICAgICJkYXRhYmFzZSI6ICJ0ZXN0X2RiIiwKICAgICJpbnB1dCI6ICJzMzovL3Nub3dmbGFrZS9pbnB1dC8iLAogICAgInN0YWdlIjogInNvbWVfc3RhZ2UiLAogICAgInN0YWdlVXJsIjogInMzOi8vc25vd2ZsYWtlL291dHB1dC8iLAogICAgImVycm9yRXZlbnRzVXJsIjogInMzOi8vc25vd2ZsYWtlL2Vycm9ycyIsCiAgICAid2FyZWhvdXNlIjogInNub3dwbG93X3doIiwKICAgICJzY2hlbWEiOiAiYXRvbWljIiwKICAgICJhY2NvdW50IjogInNub3dwbG93IiwKICAgICJ1c2VybmFtZSI6ICJhbnRvbiIsCiAgICAicGFzc3dvcmQiOiAiU3VwZXJzZWNyZXQyIiwKICAgICJwdXJwb3NlIjogIkVOUklDSEVEX0VWRU5UUyIsCiAgICAibWF4RXJyb3IiOiAxMDAwMCwKICAgICJqZGJjSG9zdCI6ICJzbm93cGxvdy51cy13ZXN0LTEuYXp1cmUuc25vd2ZsYWtlY29tcHV0aW5nLmNvbSIKICB9Cn0K",
+      "--base64"
+    ).toArray
+
+    val expected = CliLoaderConfiguration(
+      Config.LoadCommand,
+      Config(
+        auth = Config.CredentialsAuth(
+          accessKeyId = "ABCD",
+          secretAccessKey = "abcd"
+        ),
+        awsRegion = "us-east-1",
+        manifest = "snowflake-manifest",
+        stage = "some_stage",
+        stageUrl = s3("s3://snowflake/output/"),
+        snowflakeRegion = "us-west-1",
+        schema = "atomic",
+        username = "anton",
+        password = Config.PlainText("Supersecret2"),
+        input = s3("s3://snowflake/input/"),
+        account = "snowplow",
+        warehouse = "snowplow_wh",
+        database = "test_db",
+        errorEventsUrl = Some(s3("s3://snowflake/errors")),
         maxError = Some(10000),
         jdbcHost = Some("snowplow.us-west-1.azure.snowflakecomputing.com")),
       "",
