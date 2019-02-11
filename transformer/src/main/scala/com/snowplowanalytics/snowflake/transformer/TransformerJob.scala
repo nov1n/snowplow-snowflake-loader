@@ -53,22 +53,20 @@ object TransformerJob {
 
     val events = sc
       .wholeTextFiles(jobConfig.input)
-      .flatMap(rdd => {
-        val fileName = rdd._1
-        val fileContents = rdd._2
+      .flatMap{ case (fileName, fileContents) => {
         fileContents.lines.zipWithIndex.map{case (event, index) =>
           val lineNumber = index + 1
           try {
             Right(Transformer.jsonify(event))
           } catch {
             case ex : Throwable =>
-              log.error(s"Could not parse event on line $lineNumber in file $fileName")
-              log.error(s"${ex.getMessage}")
-              log.error(s"$event")
+              log.error(s"""Could not parse event on line $lineNumber in file $fileName
+                ${ex.getMessage}
+                $event""")
               Left(event)
           }
         }
-      })
+      }}
 
     val goodEvents = events.collect({case Right(x) => x})
     val errorEvents = events.collect({case Left(x) => x})
@@ -93,10 +91,11 @@ object TransformerJob {
 
     // Write out errorEvents if an errorOutput location is defined
     jobConfig.errorOutput match {
-      case Some(path) if !errorEvents.isEmpty() =>
-        errorEvents.toDF.write.mode(SaveMode.Append).text(path)
-        log.info(s"Writing error events to $path.")
-      case Some(_) => log.info(s"No error events for ${jobConfig.output}.")
+      case Some(path) =>
+        if (!errorEvents.isEmpty()) {
+          log.info(s"Writing error events to $path.")
+          errorEvents.toDF.write.mode(SaveMode.Append).text(path)
+        }
       case None => log.info(s"Discarding error events for ${jobConfig.output}.")
     }
 
